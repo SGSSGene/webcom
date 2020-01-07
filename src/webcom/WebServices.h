@@ -14,6 +14,8 @@ namespace details {
 struct WebServices : Services {
 	uWS::App app;
 
+	std::mutex mutex;
+
 	using UserData = UserConnection;
 
 	WebServices() {
@@ -45,10 +47,12 @@ struct WebServices : Services {
 
 		// setup - websockets
 		app
-		.get("/", [=](auto* res, auto* req) {
+		.get("/", [&](auto* res, auto* req) {
+			auto g = std::lock_guard(mutex);
 			serveFile("../share/gpracing/gpracing.html", res);
 		})
-		.get("/gpracing/*", [=](auto* res, auto* req) {
+		.get("/gpracing/*", [&](auto* res, auto* req) {
+			auto g = std::lock_guard(mutex);
 			auto rootPath = std::filesystem::path{"../share"};
 			auto file     = relative(std::filesystem::path{req->getUrl()}, "/");
 			serveFile(rootPath / file, res);
@@ -59,6 +63,7 @@ struct WebServices : Services {
 			.idleTimeout = 120,
 			.maxBackpressure = 1 * 1024 * 1204,
 			.open = [&](auto* ws, auto* req) {
+				auto g = std::lock_guard(mutex);
 				_try(ws, [&]() {
 					(void)req;
 					auto& userData = *std::launder(static_cast<UserData*>(ws->getUserData()));
@@ -73,6 +78,7 @@ struct WebServices : Services {
 				});
 			},
 			.message = [&](auto* ws, std::string_view message, uWS::OpCode opCode) {
+				auto g = std::lock_guard(mutex);
 				(void)opCode;
 				auto& userData = *static_cast<UserData*>(ws->getUserData());
 				_try(ws, [&]() {
@@ -118,6 +124,7 @@ struct WebServices : Services {
 				});
 			},
 			.close = [&](auto* ws, int code, std::string_view message) {
+				auto g = std::lock_guard(mutex);
 				_try(ws, [&]() {
 					auto& userData = *static_cast<UserData*>(ws->getUserData());
 					for (auto& [serviceName, adapter] : userData.adapters) {

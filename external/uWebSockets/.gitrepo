@@ -1,0 +1,12 @@
+; DO NOT EDIT (unless you know what you are doing)
+;
+; This subdirectory is a git "subrepo", and this file is maintained by the
+; git-subrepo command. See https://github.com/git-commands/git-subrepo#readme
+;
+[subrepo]
+	remote = git@github.com:uNetworking/uWebSockets.git
+	branch = master
+	commit = a23d3fd9015a3d8fa1911d3824eb0040fcb3b1bb
+	parent = fbac97623f1b5f36781c6a827667d79d7a1859a1
+	method = merge
+	cmdver = 0.4.0

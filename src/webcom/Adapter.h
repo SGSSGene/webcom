@@ -26,6 +26,9 @@ struct Adapter {
 		return std::make_shared<T>(std::forward<Args>(args)...);
 	}
 
+	operator bool() const {
+		return service;
+	}
 };
 }
 #include "Service.h"

@@ -18,7 +18,7 @@ struct WebServices : Services {
 
 	using UserData = UserConnection;
 
-	WebServices() {
+	WebServices(std::string defaultFile, std::vector<std::tuple<std::string, std::string>> paths) {
 		auto serveFile = [](std::filesystem::path file, auto* res) {
 			auto ifs = std::ifstream(file.string(), std::ios::binary);
 			std::stringstream buffer;
@@ -47,17 +47,20 @@ struct WebServices : Services {
 
 		// setup - websockets
 		app
-		.get("/", [&](auto* res, auto* req) {
+		.get("/", [&, defaultFile](auto* res, auto* req) {
 			auto g = std::lock_guard(mutex);
-			serveFile("../share/gpracing/gpracing.html", res);
-		})
-		.get("/gpracing/*", [&](auto* res, auto* req) {
-			auto g = std::lock_guard(mutex);
-			auto rootPath = std::filesystem::path{"../share"};
-			auto file     = relative(std::filesystem::path{req->getUrl()}, "/");
-			serveFile(rootPath / file, res);
-		})
-		.ws<UserData>("/ws", {
+			serveFile(defaultFile, res);
+		});
+
+		for (auto const& [key, path] : paths) {
+			app.get(key, [&, key, path](auto* res, auto* req) {
+				auto g = std::lock_guard(mutex);
+				auto rootPath = std::filesystem::path{path};
+				auto file     = relative(std::filesystem::path{req->getUrl()}, "/");
+				serveFile(rootPath / file, res);
+			});
+		}
+		app.ws<UserData>("/ws", {
 			.compression = uWS::DISABLED,
 			.maxPayloadLength = 256 * 1024,
 			.idleTimeout = 120,

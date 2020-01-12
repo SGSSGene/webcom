@@ -16,7 +16,7 @@ struct WebServices : Services {
 
 	using UserData = UserConnection;
 
-	WebServices() {
+	WebServices(std::string_view defaultFile, std::vector<std::tuple<std::string_view, std::string_view>> paths) {
 		auto serveFile = [](std::filesystem::path file, auto* res) {
 			auto ifs = std::ifstream(file.string(), std::ios::binary);
 			std::stringstream buffer;
@@ -46,14 +46,17 @@ struct WebServices : Services {
 		// setup - websockets
 		app
 		.get("/", [=](auto* res, auto* req) {
-			serveFile("../share/gpracing/gpracing.html", res);
-		})
-		.get("/gpracing/*", [=](auto* res, auto* req) {
-			auto rootPath = std::filesystem::path{"../share"};
-			auto file     = relative(std::filesystem::path{req->getUrl()}, "/");
-			serveFile(rootPath / file, res);
-		})
-		.ws<UserData>("/ws", {
+			serveFile(defaultFile, res);
+		});
+
+		for (auto [key, path] : paths) {
+			app.get(std::string{key}, [=](auto* res, auto* req) {
+				auto rootPath = std::filesystem::path{path};
+				auto file     = relative(std::filesystem::path{req->getUrl()}, "/");
+				serveFile(rootPath / file, res);
+			});
+		}
+		app.ws<UserData>("/ws", {
 			.compression = uWS::DISABLED,
 			.maxPayloadLength = 256 * 1024,
 			.idleTimeout = 120,

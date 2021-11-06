@@ -16,6 +16,7 @@
 #include <unordered_set>
 #include <variant>
 #include <vector>
+#include <optional>
 
 namespace fon {
 

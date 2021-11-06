@@ -16,16 +16,18 @@ struct Services {
     std::map<std::string, Service> serviceList;
 
     template <typename CB>
-    auto emplace(std::string const& _key, CB cb) -> Service& {
+    auto emplace(std::string const& _key, CB cb) {
         auto [iter, succ] = serviceList.try_emplace(_key, _key, cb);
-        return iter->second;
+
+        using R = typename signature<CB>::return_t;
+        return TypedService<typename R::element_type>{iter->second};
     }
 
-    auto emplace(std::string const& _key) -> Service& {
+    auto emplace(std::string const& _key) -> TypedService<detail::EmptyData> {
         auto [iter, succ] = serviceList.try_emplace(_key, _key, [](Adapter& adapter) {
             return adapter.make<detail::EmptyData>();
         });
-        return iter->second;
+        return {iter->second};
     }
 
 

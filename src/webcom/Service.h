@@ -18,12 +18,17 @@ auto to_yaml(Args&&...args) -> YAML::Node {
 }
 
 template <typename ...Args>
-auto convertToMessage(std::string_view _serviceName, std::string_view _actionName, Args&&... _args) -> YAML::Node {
+auto convertToMessage(std::string_view _serviceName, std::string_view _actionName, Args&&... _args) -> std::string {
     auto node = YAML::Node{};
     node["service"] = std::string{_serviceName};
     node["action"]  = std::string{_actionName};
     node["params"]  = to_yaml(std::forward<Args>(_args)...);
-    return node;
+
+    YAML::Emitter emit;
+    emit << node;
+    std::stringstream ss;
+    ss << emit.c_str();
+    return ss.str();
 }
 
 
@@ -75,6 +80,10 @@ struct Service {
     template <typename ...Args>
     void sendAll(std::string_view _actionName, Args&&... _args);
 
+    template <typename CB, typename ...Args>
+    void send(std::string_view _actionName, CB const& _cb, Args&&... _args) const;
+
+
     void addAdapter(Adapter& adapter) {
         objects.try_emplace(&adapter, objectCreate(adapter));
     }
@@ -91,7 +100,39 @@ struct Service {
         objectDispatch(_name, iter->second, _node);
     }
 };
+
+template <typename T>
+struct TypedService {
+    Service& service;
+
+    auto operator->() noexcept -> Service& {
+        return service;
+    }
+    auto operator->() const noexcept-> Service const& {
+        return service;
+    }
+
+    auto getClients() -> std::vector<T*> {
+        auto ret = std::vector<T*>{};
+        ret.reserve(service.objects.size());
+        for (auto& [adapter, o] : service.objects) {
+            ret.emplace_back(std::any_cast<std::shared_ptr<T>&>(o).get());
+        }
+        return ret;
+    }
+
+    auto getClients() const -> std::vector<T const*> {
+        auto ret = std::vector<T const*>{};
+        ret.reserve(service.objects.size());
+        for (auto& [adapter, o] : service.objects) {
+            ret.emplace_back(std::any_cast<std::shared_ptr<T>&>(o).get());
+        }
+        return ret;
+    }
+
+};
 }
+
 #include "Adapter.h"
 namespace webcom {
     template <typename ...Args>
@@ -101,4 +142,13 @@ namespace webcom {
             adapter->sendData(msg);
         }
     }
+
+    template <typename CB, typename ...Args>
+    void Service::send(std::string_view _actionName, CB const& _cb, Args&&... _args) const {
+        auto msg = convertToMessage(name, _actionName, std::forward<Args>(_args)...);
+        for (auto& [adapter, value] : objects) {
+            _cb(*adapter, msg);
+        }
+    }
+
 }

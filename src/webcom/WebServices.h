@@ -1,150 +1,174 @@
 #pragma once
 
-#include <App.h>
-
 #include "UserConnection.h"
 #include "Services.h"
 
+#include <cndl/Route.h>
+#include <cndl/Server.h>
+#include <simplyfile/socket/Host.h>
 #include <fstream>
 #include <filesystem>
+#include <iostream>
+#include <thread>
 
 namespace webcom {
 namespace details {
+namespace {
+struct WebSocketHandler : cndl::WebsocketHandler {
+    using UserData = UserConnection;
+
+    using Websocket = cndl::Websocket;
+    using Request   = cndl::Request;
+    std::map<Websocket*, UserData> cndlUserData;
+    Services& services;
+    std::mutex& mutex;
+    WebSocketHandler(Services& _services, std::mutex& _mutex)
+        : services {_services}
+        , mutex {_mutex}
+    {}
+
+    bool canOpen(Request const&) {
+        fmt::print("request new connection\n");
+        return true;
+    }
+
+    void onOpen([[maybe_unused]] Request const& request, Websocket& ws) {
+        auto g = std::lock_guard(mutex);
+        auto [iter, success] = cndlUserData.try_emplace(&ws);
+        auto& userData = iter->second;
+        userData.sendData = [&ws](std::string_view msg) {
+            ws.send(msg);
+        };
+        userData.getBufferedAmount = [&ws]() {
+            return ws.getOutBufferSize();
+        };
+        fmt::print("new connection\n");
+    }
+
+    void onMessage([[maybe_unused]] Websocket& ws, [[maybe_unused]] AnyMessage msg) override {
+        auto g = std::lock_guard(mutex);
+        auto& userData = cndlUserData[&ws];
+        if (std::holds_alternative<std::string_view>(msg)) {
+            auto const& message = std::get<std::string_view>(msg);
+            try {
+                auto node = YAML::Load(std::string{message});
+                if (not node.IsMap()) {
+                    throw std::runtime_error("invalid message");
+                }
+                auto serviceName = node["service"].as<std::string>();
+                auto actionName  = node["action"].as<std::string>();
+                auto params      = node["params"];
+
+                if (serviceName == "services") {
+                    if (actionName == "subscribe") {
+                        auto serviceName = node["subscribeTo"].as<std::string>();
+                        fmt::print("subscribe to {}\n", serviceName);
+
+                        auto& service = services.getService(serviceName);
+                        userData.adapters.try_emplace(serviceName, Adapter{userData.sendData, userData.getBufferedAmount, service});
+                        auto& adapter = userData.adapters.at(serviceName);
+                        service.addAdapter(adapter);
+                        service.dispatchSignalFromClient("subscribe", adapter, params);
+                    } else if (actionName == "unsubscribe") {
+                        auto serviceName = node["unsubscribeFrom"].as<std::string>();
+                        fmt::print("unsubscribe from {}\n", serviceName);
+
+                        auto& service = services.getService(serviceName);
+                        auto& adapter = userData.adapters.at(serviceName);
+
+                        service.removeAdapter(adapter);
+                        userData.adapters.erase(serviceName);
+                    } else {
+                        throw std::runtime_error(fmt::format("unknown action \"{}\"", actionName));
+                    }
+                } else {
+                    auto& adapter = userData.adapters.at(serviceName);
+                    adapter.service.dispatchSignalFromClient(actionName, adapter, params);
+                }
+            } catch(...) {
+                fmt::print("exception when reading: \"{}\"", message);
+                throw;
+            }
+        }
+    }
+
+
+    void onClose(Websocket& ws) override {
+        auto g = std::lock_guard(mutex);
+        auto& userData = cndlUserData[&ws];
+        for (auto& [serviceName, adapter] : userData.adapters) {
+            adapter.service.dispatchSignalFromClient("unsubscribe", adapter, YAML::Node{});
+            auto& service = services.getService(serviceName);
+            service.removeAdapter(adapter);
+        }
+        userData.adapters.clear();
+        fmt::print("close connection\n");
+        cndlUserData.erase(&ws);
+    }
+
+};
+
+auto serveFile(std::filesystem::path file) -> cndl::OptResponse {
+    auto ifs = std::ifstream(file.string(), std::ios::binary);
+    std::stringstream buffer;
+    buffer << ifs.rdbuf();
+
+    auto response = cndl::Response{buffer.str()};
+    if (file.extension() == ".css") {
+        response.fields["Content-Type"] = "text/css; charset=utf-8";
+        return response;
+    } else if (file.extension() == ".js") {
+        response.fields["Content-Type"] = "text/javascript; charset=utf-8";
+        return response;
+    } else if (file.extension() == ".png") {
+        response.fields["Content-Type"] = "image/png";
+        return response;
+    } else {
+        response.fields["Content-Type"] = "text/html; charset=utf-8";
+        return response;
+    }
+    std::cout << "not found " << file << "\n";
+    return std::nullopt;
+};
+
+}
 
 struct WebServices : Services {
-    uWS::App app;
+    cndl::Server cndlServer;
 
     std::mutex mutex;
 
     using UserData = UserConnection;
 
-    WebServices(std::string defaultFile, std::vector<std::tuple<std::string, std::string>> paths) {
-        auto serveFile = [](std::filesystem::path file, auto* res) {
-            auto ifs = std::ifstream(file.string(), std::ios::binary);
-            std::stringstream buffer;
-            buffer << ifs.rdbuf();
-            if (file.extension() == ".css") {
-                res->writeHeader("Content-Type", "text/css; charset=utf-8")->end(buffer.str());
-            } else if (file.extension() == ".js") {
-                res->writeHeader("Content-Type", "text/javascript; charset=utf-8")->end(buffer.str());
-            } else {
-                res->writeHeader("Content-Type", "text/html; charset=utf-8")->end(buffer.str());
-            }
-            fmt::print("url request: {}\n", file.string());
-        };
+    WebSocketHandler handler{*this, mutex};
+    cndl::WSRoute<WebSocketHandler> wsroute{std::regex{R"(/ws)"}, handler};
 
-        static auto _try = [](auto ws, auto cb) {
-            try {
-                cb();
-            } catch(std::exception const& e) {
-                fmt::print("exception: {}\n", e.what());
-            } catch(...) {
-                fmt::print("exception: unknown exception, closing socket\n");
-                ws->close();
-            }
-        };
+    cndl::Route<cndl::OptResponse(cndl::Request const&)> defaultRoute;
+    using Route = cndl::Route<cndl::OptResponse(cndl::Request const&, std::string_view)>;
+    std::vector<Route> routes;
 
-
-        // setup - websockets
-        app
-        .get("/", [&, defaultFile](auto* res, auto* req) {
-            auto g = std::lock_guard(mutex);
-            serveFile(defaultFile, res);
-        });
-
-        for (auto const& [key, path] : paths) {
-            app.get(key, [&, key, path](auto* res, auto* req) {
-                auto g = std::lock_guard(mutex);
-                auto rootPath = std::filesystem::path{path};
-                auto file     = relative(std::filesystem::path{req->getUrl()}, "/");
-                serveFile(rootPath / file, res);
-            });
+    WebServices(std::filesystem::path defaultFile, std::vector<std::tuple<std::string, std::filesystem::path>> paths)
+    : defaultRoute {std::regex{R"(/)"}, [=](cndl::Request const&) -> cndl::OptResponse {
+              return serveFile(defaultFile);
+         }, {.methods={"GET"}}}
+    {
+        for (auto const& [url, path] : paths) {
+            routes.emplace_back(std::regex{url}, [=](cndl::Request const&, std::string_view arg) -> cndl::OptResponse {
+                return serveFile(path / std::string{arg});
+            }, Route::Options{.methods={"GET"}});
         }
-        app.ws<UserData>("/ws", {
-            .compression = uWS::DISABLED,
-            .maxPayloadLength = 256 * 1024,
-            .idleTimeout = 120,
-            .maxBackpressure = 1 * 1024 * 1204,
-            .open = [&](auto* ws, auto* req) {
-                auto g = std::lock_guard(mutex);
-                _try(ws, [&]() {
-                    (void)req;
-                    auto& userData = *std::launder(static_cast<UserData*>(ws->getUserData()));
-                    userData.sendData = [ws](YAML::Node node) {
-                        YAML::Emitter emit;
-                        emit << node;
-                        std::stringstream ss;
-                        ss << emit.c_str();
-                        ws->send(ss.str());
-                    };
-                    fmt::print("new connection\n");
-                });
-            },
-            .message = [&](auto* ws, std::string_view message, uWS::OpCode opCode) {
-                auto g = std::lock_guard(mutex);
-                (void)opCode;
-                auto& userData = *static_cast<UserData*>(ws->getUserData());
-                _try(ws, [&]() {
-                    try {
-                        auto node = YAML::Load(std::string{message});
-                        if (not node.IsMap()) {
-                            throw std::runtime_error("invalid message");
-                        }
-                        auto serviceName = node["service"].as<std::string>();
-                        auto actionName  = node["action"].as<std::string>();
-                        auto params      = node["params"];
 
-                        if (serviceName == "services") {
-                            if (actionName == "subscribe") {
-                                auto serviceName = node["subscribeTo"].as<std::string>();
-                                fmt::print("subscribe to {}\n", serviceName);
-
-                                auto& service = getService(serviceName);
-                                userData.adapters.try_emplace(serviceName, Adapter{userData.sendData, service});
-                                auto& adapter = userData.adapters.at(serviceName);
-                                service.addAdapter(adapter);
-                                service.dispatchSignalFromClient("subscribe", adapter, params);
-                            } else if (actionName == "unsubscribe") {
-                                auto serviceName = node["unsubscribeFrom"].as<std::string>();
-                                fmt::print("unsubscribe from {}\n", serviceName);
-
-                                auto& service = getService(serviceName);
-                                auto& adapter = userData.adapters.at(serviceName);
-
-                                service.removeAdapter(adapter);
-                                userData.adapters.erase(serviceName);
-                            } else {
-                                throw std::runtime_error(fmt::format("unknown action \"{}\"", actionName));
-                            }
-                        } else {
-                            auto& adapter = userData.adapters.at(serviceName);
-                            adapter.service.dispatchSignalFromClient(actionName, adapter, params);
-                        }
-                    } catch(...) {
-                        fmt::print("exception when reading: \"{}\"", message);
-                        throw;
-                    }
-                });
-            },
-            .close = [&](auto* ws, int code, std::string_view message) {
-                auto g = std::lock_guard(mutex);
-                _try(ws, [&]() {
-                    auto& userData = *static_cast<UserData*>(ws->getUserData());
-                    for (auto& [serviceName, adapter] : userData.adapters) {
-                        adapter.service.dispatchSignalFromClient("unsubscribe", adapter, YAML::Node{});
-                        auto& service = getService(serviceName);
-                        service.removeAdapter(adapter);
-                    }
-                    userData.adapters.clear();
-                    fmt::print("close connection\n");
-                });
-            }
-        });
-
+        cndlServer.getDispatcher().addRoute(wsroute);
+        cndlServer.getDispatcher().addRoute(defaultRoute);
+        for (auto& r : routes) {
+            cndlServer.getDispatcher().addRoute(r);
+        }
     }
-    void run() {
-        app.listen(9001, [](auto* token) {});
-        app.run();
+    auto listen(std::vector<simplyfile::Host> const& hosts) -> cndl::Server& {
+        for (auto const& h : hosts) {
+            cndlServer.listen(h);
+        }
+        return cndlServer;
     }
 };
 

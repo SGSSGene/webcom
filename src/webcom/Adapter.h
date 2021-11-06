@@ -1,15 +1,17 @@
 #pragma once
 
 #include <any>
-#include <yaml-cpp/yaml.h>
 
 namespace webcom {
 
 struct Service;
 
 struct Adapter {
-    using CB = std::function<void(YAML::Node)>;
-    CB&       sendData;
+    using SendData = std::function<void(std::string_view)>;
+    using GetSize  = std::function<size_t()>;
+
+    SendData& sendData;
+    GetSize&  getBufferedAmount;
     Service&  service;
 
     template <typename ...Args>
@@ -20,6 +22,9 @@ struct Adapter {
 
     template <typename ...Args>
     void sendOthers(std::string_view _actionName, Args&&... _args) const;
+
+    template <typename CB, typename ...Args>
+    void send(std::string_view _actionName, CB const& _cb, Args&&... _args) const;
 
     template <typename T, typename ...Args>
     auto make(Args&&... args) {
@@ -56,6 +61,12 @@ void Adapter::sendOthers(std::string_view _actionName, Args&&... _args) const {
         }
     }
 }
-
+template <typename CB, typename ...Args>
+void Adapter::send(std::string_view _actionName, CB const& _cb, Args&&... _args) const {
+    auto msg = convertToMessage(service.name, _actionName, std::forward<Args>(_args)...);
+    for (auto& [adapter, value] : service.objects) {
+        cb(*adapter, msg);
+    }
+}
 
 }

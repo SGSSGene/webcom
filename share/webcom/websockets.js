@@ -26,7 +26,7 @@ let createWebSocket = function(url) {
 
 	ws.onmessage = function(evt) {
 		if (evt.data) {
-			let text = (new TextDecoder("utf-8")).decode(evt.data);
+			let text = evt.data
 			node = YAML.parse(text);
 			let service = node.service;
 			let action  = node.action;

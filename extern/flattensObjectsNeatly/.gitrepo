@@ -1,0 +1,12 @@
+; DO NOT EDIT (unless you know what you are doing)
+;
+; This subdirectory is a git "subrepo", and this file is maintained by the
+; git-subrepo command. See https://github.com/git-commands/git-subrepo#readme
+;
+[subrepo]
+	remote = git@gottliebtfreitag.de:simon/flattensObjectsNeatly
+	branch = main
+	commit = 464d1e243dd3e877433f194a699d411bb12fdbbb
+	parent = 6fd6c226b98d3fe30291f12c57df682527707fd1
+	method = merge
+	cmdver = 0.4.3

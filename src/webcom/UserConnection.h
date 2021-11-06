@@ -5,8 +5,8 @@
 namespace webcom {
 
 struct UserConnection {
-	std::function<void(YAML::Node)>        sendData;
-	std::map<std::string, webcom::Adapter> adapters;
+    std::function<void(YAML::Node)>        sendData;
+    std::map<std::string, webcom::Adapter> adapters;
 };
 
 }

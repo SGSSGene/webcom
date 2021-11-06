@@ -1,0 +1,12 @@
+; DO NOT EDIT (unless you know what you are doing)
+;
+; This subdirectory is a git "subrepo", and this file is maintained by the
+; git-subrepo command. See https://github.com/git-commands/git-subrepo#readme
+;
+[subrepo]
+	remote = git@github.com:gottliebtfreitag/simplyfile.git
+	branch = master
+	commit = cb18301ca4189fd7681c989df0e74a2b9819ea98
+	parent = 21fd26c444740c6b4eb7c48592f0b3ed3bd8e9cd
+	method = merge
+	cmdver = 0.4.3

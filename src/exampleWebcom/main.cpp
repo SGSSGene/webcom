@@ -15,7 +15,7 @@ using Chat = webcom::GuardedType<std::vector<std::string>>;
  * Each user (connection via websocket) will have its own view
  */
 struct ChatViewController {
-    webcom::Adapter& adapter;
+    webcom::Adapter& adapter; // handle to call remote functions
     Chat& chat;
 
     ChatViewController(webcom::Adapter& _adapter, Chat& _chat)

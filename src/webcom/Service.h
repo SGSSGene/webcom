@@ -54,7 +54,7 @@ struct Service {
     std::string                             name;
     std::function<std::any(Adapter&)>       objectCreate;
     Dispatcher                              objectDispatch;
-    std::unordered_map<Adapter*, std::any>  objects;
+    std::unordered_map<Adapter*, std::any>  remotes;
 
 
     template <typename CB>
@@ -81,21 +81,23 @@ struct Service {
         };
     }
 
+    /** does this Service have any connections?
+     */
     operator bool() const {
-        return not objects.empty();
+        return not remotes.empty();
     }
 
     void addAdapter(Adapter& adapter) {
-        objects.try_emplace(&adapter, objectCreate(adapter));
+        remotes.try_emplace(&adapter, objectCreate(adapter));
     }
 
     void removeAdapter(Adapter& adapter) {
-        objects.erase(&adapter);
+        remotes.erase(&adapter);
     }
 
     void dispatchSignalFromClient(std::string_view _name, Adapter& _adapter, YAML::Node _node) {
-        auto iter = objects.find(&_adapter);
-        if (iter == end(objects)) {
+        auto iter = remotes.find(&_adapter);
+        if (iter == end(remotes)) {
             return;
         }
         objectDispatch(_name, iter->second, _node);
@@ -115,8 +117,8 @@ struct TypedService {
 
     auto getClients() -> std::vector<T*> {
         auto ret = std::vector<T*>{};
-        ret.reserve(service.objects.size());
-        for (auto& [adapter, o] : service.objects) {
+        ret.reserve(service.remotes.size());
+        for (auto& [adapter, o] : service.remotes) {
             ret.emplace_back(std::any_cast<std::shared_ptr<T>&>(o).get());
         }
         return ret;
@@ -124,8 +126,8 @@ struct TypedService {
 
     auto getClients() const -> std::vector<T const*> {
         auto ret = std::vector<T const*>{};
-        ret.reserve(service.objects.size());
-        for (auto& [adapter, o] : service.objects) {
+        ret.reserve(service.remotes.size());
+        for (auto& [adapter, o] : service.remotes) {
             ret.emplace_back(std::any_cast<std::shared_ptr<T>&>(o).get());
         }
         return ret;

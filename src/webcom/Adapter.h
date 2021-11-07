@@ -53,13 +53,13 @@ template <typename ...Args>
 void Adapter::Call::operator()(Args&&... _args) const {
     auto msg = convertToMessage(adapter.service.name, actionName, std::forward<Args>(_args)...);
     if (type == Type::All) {
-        for (auto& [_adapter, value] : adapter.service.objects) {
+        for (auto& [_adapter, value] : adapter.service.remotes) {
             _adapter->sendData(msg);
         }
     } else if (type == Type::Back) {
         adapter.sendData(msg);
     } else if (type == Type::Others) {
-        for (auto& [_adapter, value] : adapter.service.objects) {
+        for (auto& [_adapter, value] : adapter.service.remotes) {
             if (_adapter != &adapter) {
                 _adapter->sendData(msg);
             }
@@ -69,7 +69,7 @@ void Adapter::Call::operator()(Args&&... _args) const {
 template <typename CB, typename ...Args>
 void Adapter::send(std::string_view _actionName, CB const& _cb, Args&&... _args) const {
     auto msg = convertToMessage(service.name, _actionName, std::forward<Args>(_args)...);
-    for (auto& [adapter, value] : service.objects) {
+    for (auto& [adapter, value] : service.remotes) {
         cb(*adapter, msg);
     }
 }

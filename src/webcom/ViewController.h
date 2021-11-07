@@ -6,7 +6,7 @@ namespace webcom {
 
 struct Service;
 
-struct Adapter {
+struct ViewController {
     using SendData = std::function<void(std::string_view)>;
     using GetSize  = std::function<size_t()>;
 
@@ -17,7 +17,7 @@ struct Adapter {
     struct Call {
         enum class Type {All, Back, Others};
         Type type;
-        Adapter const& adapter;
+        ViewController const& viewController;
         std::string_view actionName;
 
         template <typename ...Args>
@@ -50,33 +50,32 @@ struct Adapter {
 namespace webcom {
 
 template <typename ...Args>
-void Adapter::Call::operator()(Args&&... _args) const {
-    auto msg = convertToMessage(adapter.service.name, actionName, std::forward<Args>(_args)...);
+void ViewController::Call::operator()(Args&&... _args) const {
+    auto msg = convertToMessage(viewController.service.name, actionName, std::forward<Args>(_args)...);
     if (type == Type::All) {
-        for (auto& [_adapter, value] : adapter.service.remotes) {
-            _adapter->sendData(msg);
+        for (auto& [_viewController, value] : viewController.service.remotes) {
+            _viewController->sendData(msg);
         }
     } else if (type == Type::Back) {
-        adapter.sendData(msg);
+        viewController.sendData(msg);
     } else if (type == Type::Others) {
-        for (auto& [_adapter, value] : adapter.service.remotes) {
-            if (_adapter != &adapter) {
-                _adapter->sendData(msg);
+        for (auto& [_viewController, value] : viewController.service.remotes) {
+            if (_viewController != &viewController) {
+                _viewController->sendData(msg);
             }
         }
     }
 }
 template <typename CB, typename ...Args>
-void Adapter::send(std::string_view _actionName, CB const& _cb, Args&&... _args) const {
+void ViewController::send(std::string_view _actionName, CB const& _cb, Args&&... _args) const {
     auto msg = convertToMessage(service.name, _actionName, std::forward<Args>(_args)...);
-    for (auto& [adapter, value] : service.remotes) {
-        cb(*adapter, msg);
+    for (auto& [viewController, value] : service.remotes) {
+        cb(*viewController, msg);
     }
 }
 
-Adapter::operator bool() const {
+ViewController::operator bool() const {
     return service;
 }
-
 
 }

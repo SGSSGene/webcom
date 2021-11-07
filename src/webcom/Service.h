@@ -33,7 +33,7 @@ auto convertToMessage(std::string_view _serviceName, std::string_view _actionNam
 }
 
 
-struct Adapter;
+struct ViewContorller;
 
 namespace detail {
 template <typename CB>
@@ -53,10 +53,10 @@ struct FunctionSelector {
 struct Service {
     using Dispatcher = std::function<void(std::string_view, std::any&, YAML::Node)>;
 
-    std::string                             name;
-    std::function<std::any(Adapter&)>       objectCreate;
-    Dispatcher                              objectDispatch;
-    std::unordered_map<Adapter*, std::any>  remotes;
+    std::string                                   name;
+    std::function<std::any(ViewController&)>      objectCreate;
+    Dispatcher                                    objectDispatch;
+    std::unordered_map<ViewController*, std::any> remotes;
 
 
     template <typename CB>
@@ -64,8 +64,8 @@ struct Service {
         : name {_name}
     {
         using Return = typename webcom::signature_t<CB>::return_t;
-        objectCreate = [cb](Adapter& adapter) -> std::any {
-            return std::any(cb(adapter));
+        objectCreate = [cb](ViewController& viewController) -> std::any {
+            return std::any(cb(viewController));
         };
 
         objectDispatch = [](std::string_view action, std::any& unknown_object, YAML::Node msg) {
@@ -89,16 +89,16 @@ struct Service {
         return not remotes.empty();
     }
 
-    void addAdapter(Adapter& adapter) {
-        remotes.try_emplace(&adapter, objectCreate(adapter));
+    void addViewController(ViewController& viewController) {
+        remotes.try_emplace(&viewController, objectCreate(viewController));
     }
 
-    void removeAdapter(Adapter& adapter) {
-        remotes.erase(&adapter);
+    void removeViewController(ViewController& viewController) {
+        remotes.erase(&viewController);
     }
 
-    void dispatchSignalFromClient(std::string_view _name, Adapter& _adapter, YAML::Node _node) {
-        auto iter = remotes.find(&_adapter);
+    void dispatchSignalFromClient(std::string_view _name, ViewController& _viewController, YAML::Node _node) {
+        auto iter = remotes.find(&_viewController);
         if (iter == end(remotes)) {
             return;
         }

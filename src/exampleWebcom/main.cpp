@@ -15,16 +15,16 @@ using Chat = webcom::GuardedType<std::vector<std::string>>;
  * Each user (connection via websocket) will have its own view
  */
 struct ChatViewController {
-    webcom::Adapter& adapter; // handle to call remote functions
+    webcom::ViewController& viewController; // handle to call remote functions
     Chat& chat;
 
-    ChatViewController(webcom::Adapter& _adapter, Chat& _chat)
-        : adapter{_adapter}
+    ChatViewController(webcom::ViewController& _viewController, Chat& _chat)
+        : viewController{_viewController}
         , chat{_chat}
     {
         auto&& [g, list] = *chat;
         // call 'init' of only this client
-        adapter.callBack("init")(list);
+        viewController.callBack("init")(list);
     }
 
     static constexpr void reflect(auto& visitor) {
@@ -36,7 +36,7 @@ struct ChatViewController {
         auto&& [g, list] = *chat;
         list.push_back(str);
         // call 'addMsg' of all clients
-        adapter.callAll("addMsg")(str);
+        viewController.callAll("addMsg")(str);
     }
 };
 
@@ -56,9 +56,9 @@ int main(int argc, char const* const* argv) {
 
     Chat chat;
 
-    webServices.provideViewController("chat", [&](webcom::Adapter& adapter) {
+    webServices.provideViewController("chat", [&](webcom::ViewController& vc) {
         // create access, in theory we could do an access check here
-        return adapter.make<ChatViewController>(adapter, chat);
+        return vc.make<ChatViewController>(vc, chat);
     });
 
     simplyfile::Epoll epoll;

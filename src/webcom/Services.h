@@ -5,11 +5,6 @@
 #include <fmt/format.h>
 
 namespace webcom {
-namespace detail {
-struct EmptyData {
-    constexpr static void reflect(auto) {}
-};
-}
 
 struct Services {
     std::map<std::string, Service> serviceList;
@@ -20,13 +15,6 @@ struct Services {
 
         using R = typename signature<CB>::return_t;
         return TypedService<typename R::element_type>{iter->second};
-    }
-
-    auto emplace(std::string const& _key) -> TypedService<detail::EmptyData> {
-        auto [iter, succ] = serviceList.try_emplace(_key, _key, [](Adapter& adapter) {
-            return adapter.make<detail::EmptyData>();
-        });
-        return {iter->second};
     }
 
     auto& getService(std::string const& _key) {

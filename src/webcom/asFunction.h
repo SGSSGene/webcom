@@ -54,12 +54,4 @@ struct signature<R (C::*)(Args...)> {
 template <typename L, typename ...Args>
 using signature_t = signature<L, Args...>;
 
-
-template <typename Head, typename ...Args>
-auto drop_head(std::tuple<Head, Args...> const&) -> std::tuple<Args...>;
-
-
-template <typename T>
-using drop_head_t = decltype(drop_head(std::declval<T>()));
-
 }

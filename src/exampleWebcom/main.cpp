@@ -56,7 +56,7 @@ int main(int argc, char const* const* argv) {
 
     Chat chat;
 
-    auto serviceList = webServices.provideViewController("chat", [&](webcom::Adapter& adapter) {
+    webServices.provideViewController("chat", [&](webcom::Adapter& adapter) {
         // create access, in theory we could do an access check here
         return adapter.make<ChatViewController>(adapter, chat);
     });

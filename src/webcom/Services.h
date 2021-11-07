@@ -6,15 +6,16 @@
 
 namespace webcom {
 
-struct Services {
+class Services {
+private:
     std::map<std::string, Service> serviceList;
+public:
 
     template <typename CB>
-    auto provideViewController(std::string const& _key, CB cb) {
+    void provideViewController(std::string const& _key, CB cb) {
         auto [iter, succ] = serviceList.try_emplace(_key, _key, cb);
 
         using R = typename signature<CB>::return_t;
-        return TypedService<typename R::element_type>{iter->second};
     }
 
     auto& getService(std::string const& _key) {

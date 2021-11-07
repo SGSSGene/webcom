@@ -35,6 +35,7 @@ auto convertToMessage(std::string_view _serviceName, std::string_view _actionNam
 
 struct Adapter;
 
+namespace detail {
 template <typename CB>
 struct FunctionSelector {
     std::string_view name;
@@ -47,6 +48,7 @@ struct FunctionSelector {
         }
     }
 };
+}
 
 struct Service {
     using Dispatcher = std::function<void(std::string_view, std::any&, YAML::Node)>;
@@ -69,7 +71,7 @@ struct Service {
         objectDispatch = [](std::string_view action, std::any& unknown_object, YAML::Node msg) {
             auto& object = std::any_cast<Return&>(unknown_object);
 
-            auto selector = FunctionSelector{action, [&](auto func) {
+            auto selector = detail::FunctionSelector{action, [&](auto func) {
                 using Params = typename signature_t<std::decay_t<decltype(func)>>::params_t;
                 auto argsAsTuple = fon::yaml::deserialize<Params>(msg);
                 std::apply([&](auto&&... args) {
@@ -104,34 +106,4 @@ struct Service {
     }
 };
 
-template <typename T>
-struct TypedService {
-    Service& service;
-
-    auto operator->() noexcept -> Service& {
-        return service;
-    }
-    auto operator->() const noexcept-> Service const& {
-        return service;
-    }
-
-    auto getClients() -> std::vector<T*> {
-        auto ret = std::vector<T*>{};
-        ret.reserve(service.remotes.size());
-        for (auto& [adapter, o] : service.remotes) {
-            ret.emplace_back(std::any_cast<std::shared_ptr<T>&>(o).get());
-        }
-        return ret;
-    }
-
-    auto getClients() const -> std::vector<T const*> {
-        auto ret = std::vector<T const*>{};
-        ret.reserve(service.remotes.size());
-        for (auto& [adapter, o] : service.remotes) {
-            ret.emplace_back(std::any_cast<std::shared_ptr<T>&>(o).get());
-        }
-        return ret;
-    }
-
-};
 }

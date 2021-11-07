@@ -52,11 +52,13 @@ struct FunctionSelector {
 struct Service {
     using Dispatcher = std::function<void(std::string_view, std::any&, YAML::Node)>;
 
+    template <typename> friend struct FunctionSelector;
+private:
     std::string                                   name;
     std::function<std::any(ViewController&)>      objectCreate;
     Dispatcher                                    objectDispatch;
-    std::unordered_map<ViewController*, std::any> remotes;
-
+    std::unordered_map<ViewController*, std::any> viewControllers;
+public:
 
     template <typename CB>
     Service(std::string_view _name, CB cb)
@@ -82,23 +84,31 @@ struct Service {
         };
     }
 
+    auto getName() const -> std::string_view {
+        return name;
+    }
+    auto getViewControllers() const -> std::unordered_map<ViewController*, std::any> const& {
+        return viewControllers;
+    }
+
+
     /** does this Service have any connections?
      */
     operator bool() const {
-        return not remotes.empty();
+        return not viewControllers.empty();
     }
 
     void addViewController(ViewController& viewController) {
-        remotes.try_emplace(&viewController, objectCreate(viewController));
+        viewControllers.try_emplace(&viewController, objectCreate(viewController));
     }
 
     void removeViewController(ViewController& viewController) {
-        remotes.erase(&viewController);
+        viewControllers.erase(&viewController);
     }
 
     void dispatchSignalFromClient(std::string_view _name, ViewController& _viewController, YAML::Node _node) {
-        auto iter = remotes.find(&_viewController);
-        if (iter == end(remotes)) {
+        auto iter = viewControllers.find(&_viewController);
+        if (iter == end(viewControllers)) {
             return;
         }
         objectDispatch(_name, iter->second, _node);

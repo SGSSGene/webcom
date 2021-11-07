@@ -51,15 +51,15 @@ namespace webcom {
 
 template <typename ...Args>
 void ViewController::Call::operator()(Args&&... _args) const {
-    auto msg = detail::convertToMessage(viewController.service.name, actionName, std::forward<Args>(_args)...);
+    auto msg = detail::convertToMessage(viewController.service.getName(), actionName, std::forward<Args>(_args)...);
     if (type == Type::All) {
-        for (auto& [_viewController, value] : viewController.service.remotes) {
+        for (auto& [_viewController, value] : viewController.service.getViewControllers()) {
             _viewController->sendData(msg);
         }
     } else if (type == Type::Back) {
         viewController.sendData(msg);
     } else if (type == Type::Others) {
-        for (auto& [_viewController, value] : viewController.service.remotes) {
+        for (auto& [_viewController, value] : viewController.service.getViewControllers()) {
             if (_viewController != &viewController) {
                 _viewController->sendData(msg);
             }
@@ -68,8 +68,8 @@ void ViewController::Call::operator()(Args&&... _args) const {
 }
 template <typename CB, typename ...Args>
 void ViewController::send(std::string_view _actionName, CB const& _cb, Args&&... _args) const {
-    auto msg = detail::convertToMessage(service.name, _actionName, std::forward<Args>(_args)...);
-    for (auto& [viewController, value] : service.remotes) {
+    auto msg = detail::convertToMessage(service.getName(), _actionName, std::forward<Args>(_args)...);
+    for (auto& [viewController, value] : service.getViewControllers()) {
         cb(*viewController, msg);
     }
 }

@@ -13,6 +13,8 @@
 
 namespace webcom {
 
+namespace detail {
+
 template <typename ...Args>
 auto to_yaml(Args&&...args) -> YAML::Node {
     return fon::yaml::serialize<std::tuple<std::decay_t<Args>...>>(std::tuple{std::forward<Args>(args)...});
@@ -32,10 +34,6 @@ auto convertToMessage(std::string_view _serviceName, std::string_view _actionNam
     return ss.str();
 }
 
-
-struct ViewContorller;
-
-namespace detail {
 template <typename CB>
 struct FunctionSelector {
     std::string_view name;
@@ -48,6 +46,7 @@ struct FunctionSelector {
         }
     }
 };
+
 }
 
 struct Service {

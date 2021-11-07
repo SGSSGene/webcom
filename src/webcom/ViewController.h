@@ -51,7 +51,7 @@ namespace webcom {
 
 template <typename ...Args>
 void ViewController::Call::operator()(Args&&... _args) const {
-    auto msg = convertToMessage(viewController.service.name, actionName, std::forward<Args>(_args)...);
+    auto msg = detail::convertToMessage(viewController.service.name, actionName, std::forward<Args>(_args)...);
     if (type == Type::All) {
         for (auto& [_viewController, value] : viewController.service.remotes) {
             _viewController->sendData(msg);
@@ -68,7 +68,7 @@ void ViewController::Call::operator()(Args&&... _args) const {
 }
 template <typename CB, typename ...Args>
 void ViewController::send(std::string_view _actionName, CB const& _cb, Args&&... _args) const {
-    auto msg = convertToMessage(service.name, _actionName, std::forward<Args>(_args)...);
+    auto msg = detail::convertToMessage(service.name, _actionName, std::forward<Args>(_args)...);
     for (auto& [viewController, value] : service.remotes) {
         cb(*viewController, msg);
     }

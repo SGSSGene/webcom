@@ -30,9 +30,10 @@ let createWebSocket = function(url) {
             node = YAML.parse(text);
             let service = node.service;
             let action  = node.action;
-            let params  = node.params;
-            if (params === null) {
-                params = [];
+            console.log(node.params);
+            let params = [];
+            for (let i in node.params) {
+                params.push(node.params[i]);
             }
             if (service in ws.dispatcher) {
                 let methods = ws.dispatcher[service].methods;

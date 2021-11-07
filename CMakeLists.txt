@@ -26,16 +26,19 @@ target_link_libraries(simplyfile
 
 # cndl (extern)
 add_library(cndl
-    extern/cndl/base64.cpp
     extern/cndl/ConnectionHandler.cpp
-    extern/cndl/ProtocolHandler.cpp
+    extern/cndl/DateStrHelper.cpp
     extern/cndl/Dispatcher.cpp
     extern/cndl/HttpProtocol.cpp
+    extern/cndl/ProtocolHandler.cpp
     extern/cndl/Request.cpp
     extern/cndl/Response.cpp
     extern/cndl/Route.cpp
     extern/cndl/Server.cpp
+    extern/cndl/StaticFileHandler.cpp
+    extern/cndl/WSRoute.cpp
     extern/cndl/Websocket.cpp
+    extern/cndl/base64.cpp
 )
 target_include_directories(cndl PUBLIC extern)
 target_link_libraries(cndl
@@ -47,7 +50,29 @@ add_subdirectory(extern/fmt)
 
 
 add_subdirectory(extern/flattensObjectsNeatly)
-include_directories(extern/flattensObjectsNeatly/src)
+#include_directories(extern/flattensObjectsNeatly/src)
 
 # Executable PROJECT_NAME
-include_directories(src)
+
+add_library(webcom INTERFACE
+)
+target_include_directories(webcom INTERFACE src)
+target_link_libraries(webcom INTERFACE
+    cndl
+    fon
+)
+
+
+add_executable(exampleWebcom
+    src/exampleWebcom/main.cpp
+)
+target_link_libraries(exampleWebcom
+    cndl
+    fon
+    webcom
+    yaml-cpp
+    fmt
+    crypto
+)
+
+

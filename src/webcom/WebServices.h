@@ -13,7 +13,7 @@
 
 namespace webcom {
 namespace details {
-namespace {
+
 struct WebSocketHandler : cndl::WebsocketHandler {
     using UserData = UserConnection;
 
@@ -115,26 +115,25 @@ auto serveFile(std::filesystem::path file) -> cndl::OptResponse {
 
     auto response = cndl::Response{buffer.str()};
     if (file.extension() == ".css") {
-        response.fields["Content-Type"] = "text/css; charset=utf-8";
+        response.fields.emplace("Content-Type", "text/css; charset=utf-8");
         return response;
     } else if (file.extension() == ".js") {
-        response.fields["Content-Type"] = "text/javascript; charset=utf-8";
+        response.fields.emplace("Content-Type", "text/javascript; charset=utf-8");
         return response;
     } else if (file.extension() == ".png") {
-        response.fields["Content-Type"] = "image/png";
+        response.fields.emplace("Content-Type", "image/png");
         return response;
     } else {
-        response.fields["Content-Type"] = "text/html; charset=utf-8";
+        response.fields.emplace("Content-Type", "text/html; charset=utf-8");
         return response;
     }
     std::cout << "not found " << file << "\n";
     return std::nullopt;
 };
 
-}
-
 struct WebServices : Services {
-    cndl::Server cndlServer;
+    simplyfile::Epoll epoll;
+    cndl::Server cndlServer{epoll};
 
     std::mutex mutex;
 
@@ -154,6 +153,7 @@ struct WebServices : Services {
     {
         for (auto const& [url, path] : paths) {
             routes.emplace_back(std::regex{url}, [=](cndl::Request const&, std::string_view arg) -> cndl::OptResponse {
+                fmt::print("serving: {}/{}\n", std::string{path},  arg);
                 return serveFile(path / std::string{arg});
             }, Route::Options{.methods={"GET"}});
         }

@@ -3,7 +3,8 @@
 #include "asFunction.h"
 
 #include <any>
-#include <flattensObjectsNeatly/flattensObjectsNeatly.h>
+#include <fon/yaml.h>
+#include <fon/std/all.h>
 #include <map>
 #include <string_view>
 #include <unordered_set>
@@ -34,6 +35,19 @@ auto convertToMessage(std::string_view _serviceName, std::string_view _actionNam
 
 struct Adapter;
 
+template <typename CB>
+struct FunctionSelector {
+    std::string_view name;
+    CB cb;
+
+    template <typename F>
+    void operator()(std::string_view action, F func) {
+        if (name == action) {
+            cb(func);
+        }
+    }
+};
+
 struct Service {
     using Dispatcher = std::function<void(std::string_view, std::any&, YAML::Node)>;
 
@@ -55,21 +69,15 @@ struct Service {
         objectDispatch = [](std::string_view action, std::any& unknown_object, YAML::Node msg) {
             auto& object = std::any_cast<Return&>(unknown_object);
 
-            fon::visit([&](auto& node, auto& obj) {
-                using Node   = std::decay_t<decltype(node)>;
-                Node::range(obj, [&](auto& key, auto& value) {
-                    if (key == action) {
-                        using Params = typename signature_t<std::decay_t<decltype(value)>>::params_t;
-
-                        auto argsAsTuple = fon::yaml::deserialize<Params>(msg);
-                        std::apply([&](auto&&... args) {
-                            ((*object).*value)(std::forward<decltype(args)>(args)...);
-                        }, argsAsTuple);
-                    }
-                }, [&](auto& value) {
-                    node % value;
-                });
-            }, *object);
+            auto selector = FunctionSelector{action, [&](auto func) {
+                using Params = typename signature_t<std::decay_t<decltype(func)>>::params_t;
+                auto argsAsTuple = fon::yaml::deserialize<Params>(msg);
+                std::apply([&](auto&&... args) {
+                    ((*object).*func)(std::forward<decltype(args)>(args)...);
+                }, argsAsTuple);
+            }};
+            using R2 = typename Return::element_type;
+            R2::reflect(selector);
         };
     }
 

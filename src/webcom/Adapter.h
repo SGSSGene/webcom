@@ -14,14 +14,25 @@ struct Adapter {
     GetSize&  getBufferedAmount;
     Service&  service;
 
-    template <typename ...Args>
-    void sendBack(std::string_view _actionName, Args&&... _args) const;
+    struct Call {
+        enum class Type {All, Back, Others};
+        Type type;
+        Adapter const& adapter;
+        std::string_view actionName;
 
-    template <typename ...Args>
-    void sendAll(std::string_view _actionName, Args&&... _args) const;
+        template <typename ...Args>
+        void operator()(Args&&... _args) const;
+    };
 
-    template <typename ...Args>
-    void sendOthers(std::string_view _actionName, Args&&... _args) const;
+    auto callAll(std::string_view _actionName) const {
+        return Call{Call::Type::All, *this, _actionName};
+    }
+    auto callBack(std::string_view _actionName) const {
+        return Call{Call::Type::Back, *this, _actionName};
+    }
+    auto callOthers(std::string_view _actionName) const {
+        return Call{Call::Type::Others, *this, _actionName};
+    }
 
     template <typename CB, typename ...Args>
     void send(std::string_view _actionName, CB const& _cb, Args&&... _args) const;
@@ -41,23 +52,19 @@ struct Adapter {
 namespace webcom {
 
 template <typename ...Args>
-void Adapter::sendBack(std::string_view _actionName, Args&&... _args) const {
-    auto msg = convertToMessage(service.name, _actionName, std::forward<Args>(_args)...);
-    sendData(msg);
-}
-template <typename ...Args>
-void Adapter::sendAll(std::string_view _actionName, Args&&... _args) const {
-    auto msg = convertToMessage(service.name, _actionName, std::forward<Args>(_args)...);
-    for (auto& [adapter, value] : service.objects) {
-        adapter->sendData(msg);
-    }
-}
-template <typename ...Args>
-void Adapter::sendOthers(std::string_view _actionName, Args&&... _args) const {
-    auto msg = convertToMessage(service.name, _actionName, std::forward<Args>(_args)...);
-    for (auto& [adapter, value] : service.objects) {
-        if (adapter != this) {
-            adapter->sendData(msg);
+void Adapter::Call::operator()(Args&&... _args) const {
+    auto msg = convertToMessage(adapter.service.name, actionName, std::forward<Args>(_args)...);
+    if (type == Type::All) {
+        for (auto& [_adapter, value] : adapter.service.objects) {
+            _adapter->sendData(msg);
+        }
+    } else if (type == Type::Back) {
+        adapter.sendData(msg);
+    } else if (type == Type::Others) {
+        for (auto& [_adapter, value] : adapter.service.objects) {
+            if (_adapter != &adapter) {
+                _adapter->sendData(msg);
+            }
         }
     }
 }

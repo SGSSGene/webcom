@@ -7,8 +7,7 @@
 namespace webcom {
 namespace detail {
 struct EmptyData {
-    template <typename Node>
-    void serialize(Node& node) {}
+    constexpr static void reflect(auto) {}
 };
 }
 
@@ -29,7 +28,6 @@ struct Services {
         });
         return {iter->second};
     }
-
 
     auto& getService(std::string const& _key) {
         auto iter = serviceList.find(_key);

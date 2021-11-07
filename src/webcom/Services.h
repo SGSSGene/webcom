@@ -10,7 +10,7 @@ struct Services {
     std::map<std::string, Service> serviceList;
 
     template <typename CB>
-    auto emplace(std::string const& _key, CB cb) {
+    auto provideViewController(std::string const& _key, CB cb) {
         auto [iter, succ] = serviceList.try_emplace(_key, _key, cb);
 
         using R = typename signature<CB>::return_t;

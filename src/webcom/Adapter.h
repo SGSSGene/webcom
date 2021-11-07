@@ -42,9 +42,7 @@ struct Adapter {
         return std::make_shared<T>(std::forward<Args>(args)...);
     }
 
-    operator bool() const {
-        return service;
-    }
+    operator bool() const;
 };
 }
 #include "Service.h"
@@ -75,5 +73,10 @@ void Adapter::send(std::string_view _actionName, CB const& _cb, Args&&... _args)
         cb(*adapter, msg);
     }
 }
+
+Adapter::operator bool() const {
+    return service;
+}
+
 
 }

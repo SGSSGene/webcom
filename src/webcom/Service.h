@@ -85,13 +85,6 @@ struct Service {
         return not objects.empty();
     }
 
-    template <typename ...Args>
-    void sendAll(std::string_view _actionName, Args&&... _args);
-
-    template <typename CB, typename ...Args>
-    void send(std::string_view _actionName, CB const& _cb, Args&&... _args) const;
-
-
     void addAdapter(Adapter& adapter) {
         objects.try_emplace(&adapter, objectCreate(adapter));
     }
@@ -139,24 +132,4 @@ struct TypedService {
     }
 
 };
-}
-
-#include "Adapter.h"
-namespace webcom {
-    template <typename ...Args>
-    void Service::sendAll(std::string_view _actionName, Args&&... _args) {
-        auto msg = convertToMessage(name, _actionName, std::forward<Args>(_args)...);
-        for (auto& [adapter, value] : objects) {
-            adapter->sendData(msg);
-        }
-    }
-
-    template <typename CB, typename ...Args>
-    void Service::send(std::string_view _actionName, CB const& _cb, Args&&... _args) const {
-        auto msg = convertToMessage(name, _actionName, std::forward<Args>(_args)...);
-        for (auto& [adapter, value] : objects) {
-            _cb(*adapter, msg);
-        }
-    }
-
 }

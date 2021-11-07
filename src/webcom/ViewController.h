@@ -34,9 +34,6 @@ struct ViewController {
         return Call{Call::Type::Others, *this, _actionName};
     }
 
-    template <typename CB, typename ...Args>
-    void send(std::string_view _actionName, CB const& _cb, Args&&... _args) const;
-
     template <typename T, typename ...Args>
     auto make(Args&&... args) {
         return std::make_shared<T>(std::forward<Args>(args)...);
@@ -64,13 +61,6 @@ void ViewController::Call::operator()(Args&&... _args) const {
                 _viewController->sendData(msg);
             }
         }
-    }
-}
-template <typename CB, typename ...Args>
-void ViewController::send(std::string_view _actionName, CB const& _cb, Args&&... _args) const {
-    auto msg = detail::convertToMessage(service.getName(), _actionName, std::forward<Args>(_args)...);
-    for (auto& [viewController, value] : service.getViewControllers()) {
-        cb(*viewController, msg);
     }
 }
 

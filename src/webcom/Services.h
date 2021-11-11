@@ -18,8 +18,13 @@ public:
         using R = typename signature<CB>::return_t;
     }
 
-    auto& getService(std::string const& _key) {
-        auto iter = serviceList.find(_key);
+    template <typename CB>
+    auto subscribe(std::string_view _serviceName, CB cb) -> std::unique_ptr<ViewController> {
+        return getService(_serviceName).createViewController(std::move(cb));
+    }
+
+    auto& getService(std::string_view _key) {
+        auto iter = serviceList.find(std::string{_key}); //!TODO how to make it work with std::string_view
         if (iter == end(serviceList)) {
             throw std::runtime_error(fmt::format("unknown service \"{}\"", _key));
         }

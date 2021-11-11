@@ -22,7 +22,7 @@ struct ChatViewController : webcom::ViewController {
     {
         auto&& [g, list] = *chat;
         // call 'init' of only this client
-        viewController.callBack("init")(list);
+        callBack("init")(list);
     }
 
     static constexpr void reflect(auto& visitor) {
@@ -34,7 +34,7 @@ struct ChatViewController : webcom::ViewController {
         auto&& [g, list] = *chat;
         list.push_back(str);
         // call 'addMsg' of all clients
-        viewController.callAll("addMsg")(str);
+        callAll("addMsg")(str);
     }
 };
 

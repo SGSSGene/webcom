@@ -62,9 +62,6 @@ struct WebSocketHandler : cndl::WebsocketHandler {
                         fmt::print("subscribe to {}\n", serviceName);
 
                         auto& service = services.getService(serviceName);
-                        //userData.viewControllers.try_emplace(serviceName, ViewController{userData.sendData, userData.getBufferedAmount, service});
-                        //auto& viewController = userData.viewControllers.at(serviceName);
-                        //service.addViewController(viewController);
                         auto [iter, succ] = userData.viewControllers.try_emplace(serviceName, service.createViewController(userData.sendData));
                     } else if (actionName == "unsubscribe") {
                         auto serviceName = node["unsubscribeFrom"].as<std::string>();

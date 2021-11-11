@@ -19,9 +19,6 @@ struct ViewController {
     using SendData = std::function<void(std::string_view)>;
     using GetSize  = std::function<size_t()>;
 
-    ViewController& viewController{*this};
-
-
     thread_local static inline SendData gSendData;
     thread_local static inline Service* gService{};
     SendData sendData{std::move(gSendData)};

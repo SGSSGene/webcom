@@ -1,6 +1,5 @@
 #pragma once
 
-#include "UserConnection.h"
 #include "Services.h"
 
 #include <fon/yaml.h>
@@ -131,8 +130,6 @@ struct WebServices : Services {
     cndl::Server cndlServer{epoll};
 
     std::mutex mutex;
-
-    using UserData = UserConnection;
 
     WebSocketHandler handler{*this, mutex};
     cndl::WSRoute<WebSocketHandler> wsroute{std::regex{R"(/ws)"}, handler};

@@ -27,6 +27,8 @@ struct ViewController {
         , getBufferedAmount{_getSize}
         , service{_service}
     {}
+    ~ViewController();
+
     auto operator=(ViewController const&) -> ViewController = delete;
     auto operator=(ViewController&&) -> ViewController = delete;
 
@@ -72,6 +74,11 @@ struct ViewController {
 #include "Service.h"
 
 namespace webcom {
+
+ViewController::~ViewController() {
+    service.removeViewController(*this);
+}
+
 
 template <typename ...Args>
 void ViewController::Call::operator()(Args&&... _args) const {

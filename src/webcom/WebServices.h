@@ -77,7 +77,6 @@ struct WebSocketHandler : cndl::WebsocketHandler {
                         auto& service = services.getService(serviceName);
                         auto& viewController = userData.viewControllers.at(serviceName);
 
-                        service.removeViewController(*viewController);
                         userData.viewControllers.erase(serviceName);
                     } else {
                         throw std::runtime_error(fmt::format("unknown action \"{}\"", actionName));
@@ -99,8 +98,6 @@ struct WebSocketHandler : cndl::WebsocketHandler {
         auto& userData = cndlUserData[&ws];
         for (auto& [serviceName, viewController] : userData.viewControllers) {
             viewController->service.dispatchSignalFromClient("unsubscribe", *viewController, YAML::Node{});
-            auto& service = services.getService(serviceName);
-            service.removeViewController(*viewController);
         }
         userData.viewControllers.clear();
         fmt::print("close connection\n");

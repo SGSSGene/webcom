@@ -6,28 +6,38 @@ namespace webcom {
 
 struct Service;
 
-struct ViewControllerBase {
+struct ViewController;
+
+/*struct ViewControllerBase {
+    thread_local static inline ViewController* gViewController;
+    ViewController& viewController{*gViewController};
+
     virtual ~ViewControllerBase() = default;
-};
+};*/
 
 struct ViewController {
     using SendData = std::function<void(std::string_view)>;
     using GetSize  = std::function<size_t()>;
+
+    ViewController& viewController{*this};
+
 
     thread_local static inline SendData gSendData;
     thread_local static inline Service* gService{};
     SendData sendData{std::move(gSendData)};
     Service& service{*gService};
 
-    ViewController() = default;
+    ViewController() {
+
+    }
     ViewController(ViewController const&) = delete;
-    ViewController(ViewController&&) = default;
+    ViewController(ViewController&&) = delete;
 
 /*    ViewController(SendData _sendData, Service& _service)
         : sendData{std::move(_sendData)}
         , service{_service}
     {}*/
-    ~ViewController();
+    virtual ~ViewController();
 
     auto operator=(ViewController const&) -> ViewController = delete;
     auto operator=(ViewController&&) -> ViewController = delete;
@@ -66,7 +76,8 @@ struct ViewController {
     }
 
     template <typename T, typename ...Args>
-    auto make(Args&&... args) {
+    static auto make(Args&&... args) {
+//        ViewControllerBase::gViewController = this;
         return std::make_unique<T>(std::forward<Args>(args)...);
     }
 

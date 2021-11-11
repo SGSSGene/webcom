@@ -50,14 +50,14 @@ struct FunctionSelector {
 }
 
 struct Service {
-    using Dispatcher = std::function<void(std::string_view, ViewControllerBase&, YAML::Node)>;
+    using Dispatcher = std::function<void(std::string_view, ViewController&, YAML::Node)>;
 
     template <typename> friend struct FunctionSelector;
 private:
-    std::string                                                              name;
-    std::function<std::unique_ptr<ViewControllerBase>(ViewController&)>      objectCreate;
+    std::string                                               name;
+    std::function<std::unique_ptr<ViewController>()>      objectCreate;
     Dispatcher                                                               objectDispatch;
-    std::unordered_map<ViewController*, std::unique_ptr<ViewControllerBase>> viewControllers;
+    std::unordered_map<ViewController*, ViewController*> viewControllers;
 public:
 
     template <typename CB>
@@ -65,11 +65,11 @@ public:
         : name {_name}
     {
         using Return = typename webcom::signature_t<CB>::return_t::element_type;
-        objectCreate = [cb](ViewController& viewController) -> std::unique_ptr<ViewControllerBase> {
-            return cb(viewController);
+        objectCreate = [cb]() -> std::unique_ptr<ViewController> {
+            return cb();
         };
 
-        objectDispatch = [](std::string_view action, ViewControllerBase& unknown_object, YAML::Node msg) {
+        objectDispatch = [](std::string_view action, ViewController& unknown_object, YAML::Node msg) {
             auto& object = dynamic_cast<Return&>(unknown_object);
 
             auto selector = detail::FunctionSelector{action, [&](auto func) {
@@ -86,7 +86,7 @@ public:
     auto getName() const -> std::string_view {
         return name;
     }
-    auto getViewControllers() const -> std::unordered_map<ViewController*, std::unique_ptr<ViewControllerBase>> const& {
+    auto getViewControllers() const -> std::unordered_map<ViewController*, ViewController*> const& {
         return viewControllers;
     }
 
@@ -100,8 +100,9 @@ public:
     auto createViewController(std::function<void(std::string_view)> _sendData) -> std::unique_ptr<ViewController> {
         ViewController::gSendData = std::move(_sendData);
         ViewController::gService = this;
-        auto viewController = std::make_unique<ViewController>();
-        viewControllers.try_emplace(viewController.get(), objectCreate(*viewController));
+        auto viewController = objectCreate();
+        auto ptr = viewController.get();
+        viewControllers.try_emplace(ptr, ptr);
 
         return viewController;
     }

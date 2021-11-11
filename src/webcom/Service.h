@@ -99,14 +99,9 @@ public:
 
     auto createViewController(std::function<void(std::string_view)>& _sendData, std::function<size_t()>& _getSize) -> std::unique_ptr<ViewController> {
         auto viewController = std::make_unique<ViewController>(_sendData, _getSize, *this);
-        addViewController(*viewController);
+        viewControllers.try_emplace(viewController.get(), objectCreate(*viewController));
+
         return viewController;
-    }
-
-
-
-    void addViewController(ViewController& viewController) {
-        viewControllers.try_emplace(&viewController, objectCreate(viewController));
     }
 
     void removeViewController(ViewController& viewController) {

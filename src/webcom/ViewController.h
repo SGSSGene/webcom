@@ -69,6 +69,8 @@ struct ViewController {
     auto make(Args&&... args) {
         return std::make_unique<T>(std::forward<Args>(args)...);
     }
+
+    void dispatchSignalFromClient(std::string_view _name, YAML::Node _node = {});
 };
 }
 #include "Service.h"
@@ -77,6 +79,10 @@ namespace webcom {
 
 ViewController::~ViewController() {
     service.removeViewController(*this);
+}
+
+void ViewController::dispatchSignalFromClient(std::string_view _name, YAML::Node _node) {
+    service.dispatchSignalFromClient(_name, *this, _node);
 }
 
 

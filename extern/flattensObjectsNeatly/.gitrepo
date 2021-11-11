@@ -6,7 +6,7 @@
 [subrepo]
 	remote = git@gottliebtfreitag.de:simon/flattensObjectsNeatly
 	branch = main
-	commit = 464d1e243dd3e877433f194a699d411bb12fdbbb
-	parent = 6fd6c226b98d3fe30291f12c57df682527707fd1
+	commit = 4843e33f233787c68652d6604a1b6fb7b48d4a12
+	parent = 93326513edb48218a09566d6e46839f0d4ea9eb3
 	method = merge
 	cmdver = 0.4.3

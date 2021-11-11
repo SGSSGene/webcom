@@ -38,6 +38,7 @@ add_executable(testYAMLFon
     src/testYAMLFon/testFloats.cpp
     src/testYAMLFon/testInts.cpp
     src/testYAMLFon/testPointers.cpp
+    src/testYAMLFon/testYAML.cpp
 )
 target_link_libraries(testYAMLFon
     fon

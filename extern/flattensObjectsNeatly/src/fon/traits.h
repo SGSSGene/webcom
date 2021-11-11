@@ -76,10 +76,10 @@ auto getEmpty() -> T {
     static_assert(std::is_constructible_v<T, ctor> or std::is_constructible_v<T>,
         "object is not constructible");
 
-    if constexpr (std::is_constructible_v<T, ctor> and not std::is_arithmetic_v<T>) {
-        return T{ctor{}};
-    } else if constexpr (std::is_constructible_v<T>) {
+    if constexpr (std::is_constructible_v<T>) {
         return T{};
+    } else if constexpr (std::is_constructible_v<T, ctor> and not std::is_arithmetic_v<T>) {
+        return T{ctor{}};
     } else {
         return T{};
     }

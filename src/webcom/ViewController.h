@@ -14,15 +14,15 @@ struct ViewController {
     using SendData = std::function<void(std::string_view)>;
     using GetSize  = std::function<size_t()>;
 
-    SendData& sendData;
-    Service&  service;
+    SendData sendData;
+    Service& service;
 
     ViewController() = delete;
     ViewController(ViewController const&) = delete;
     ViewController(ViewController&&) = default;
 
-    ViewController(SendData& _sendData, Service& _service)
-        : sendData{_sendData}
+    ViewController(SendData _sendData, Service& _service)
+        : sendData{std::move(_sendData)}
         , service{_service}
     {}
     ~ViewController();

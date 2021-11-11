@@ -75,4 +75,13 @@ target_link_libraries(exampleWebcom
     crypto
 )
 
-
+add_executable(exampleWebcom2
+    src/exampleWebcom2/main.cpp
+)
+target_link_libraries(exampleWebcom2
+    fon
+    webcom
+    yaml-cpp
+    fmt
+    crypto
+)

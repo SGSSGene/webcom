@@ -97,8 +97,8 @@ public:
         return not viewControllers.empty();
     }
 
-    auto createViewController(std::function<void(std::string_view)>& _sendData) -> std::unique_ptr<ViewController> {
-        auto viewController = std::make_unique<ViewController>(_sendData, *this);
+    auto createViewController(std::function<void(std::string_view)> _sendData) -> std::unique_ptr<ViewController> {
+        auto viewController = std::make_unique<ViewController>(std::move(_sendData), *this);
         viewControllers.try_emplace(viewController.get(), objectCreate(*viewController));
 
         return viewController;

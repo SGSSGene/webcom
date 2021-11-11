@@ -81,7 +81,7 @@ struct ViewController {
         return std::make_unique<T>(std::forward<Args>(args)...);
     }
 
-    void dispatchSignalFromClient(std::string_view _name, YAML::Node _node = {});
+    void dispatchSignalFromClient(YAML::Node _node);
 };
 }
 #include "Service.h"
@@ -92,8 +92,8 @@ ViewController::~ViewController() {
     service.removeViewController(*this);
 }
 
-void ViewController::dispatchSignalFromClient(std::string_view _name, YAML::Node _node) {
-    service.dispatchSignalFromClient(_name, *this, _node);
+void ViewController::dispatchSignalFromClient(YAML::Node _node) {
+    service.dispatchSignalFromClient(*this, _node);
 }
 
 template <typename ...Args>

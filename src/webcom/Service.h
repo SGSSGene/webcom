@@ -50,7 +50,7 @@ struct FunctionSelector {
 }
 
 struct Service {
-    using Dispatcher = std::function<void(std::string_view, ViewController&, YAML::Node)>;
+    using Dispatcher = std::function<void(ViewController&, YAML::Node)>;
 
     template <typename> friend struct FunctionSelector;
 private:
@@ -64,22 +64,22 @@ public:
     Service(std::string_view _name, CB cb)
         : name {_name}
     {
-        using Return = typename webcom::signature_t<CB>::return_t::element_type;
         objectCreate = [cb]() -> std::unique_ptr<ViewController> {
             return cb();
         };
 
-        objectDispatch = [](std::string_view action, ViewController& unknown_object, YAML::Node msg) {
-            auto& object = dynamic_cast<Return&>(unknown_object);
+        objectDispatch = [](ViewController& viewController, YAML::Node msg) {
+            using TypedViewController = typename webcom::signature_t<CB>::return_t::element_type;
+            auto& typedViewController = dynamic_cast<TypedViewController&>(viewController);
 
-            auto selector = detail::FunctionSelector{action, [&](auto func) {
+            auto selector = detail::FunctionSelector{msg["action"].as<std::string>(), [&](auto func) {
                 using Params = typename signature_t<std::decay_t<decltype(func)>>::params_t;
-                auto argsAsTuple = fon::yaml::deserialize<Params>(msg);
-                std::apply([&](auto&&... args) {
-                    (object.*func)(std::forward<decltype(args)>(args)...);
-                }, argsAsTuple);
+                auto paramsAsTuple = fon::yaml::deserialize<Params>(msg["params"]);
+                std::apply([&](auto&&... params) {
+                    (typedViewController.*func)(std::forward<decltype(params)>(params)...);
+                }, paramsAsTuple);
             }};
-            Return::reflect(selector);
+            TypedViewController::reflect(selector);
         };
     }
 
@@ -105,8 +105,8 @@ public:
         viewControllers.erase(&viewController);
     }
 
-    void dispatchSignalFromClient(std::string_view _name, ViewController& _viewController, YAML::Node _node) {
-        objectDispatch(_name, _viewController, _node);
+    void dispatchSignalFromClient(ViewController& _viewController, YAML::Node _node) {
+        objectDispatch(_viewController, _node);
     }
 };
 

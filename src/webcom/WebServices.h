@@ -66,7 +66,6 @@ struct WebSocketHandler : cndl::WebsocketHandler {
                         //auto& viewController = userData.viewControllers.at(serviceName);
                         //service.addViewController(viewController);
                         auto [iter, succ] = userData.viewControllers.try_emplace(serviceName, service.createViewController(userData.sendData));
-                        iter->second->dispatchSignalFromClient("subscribe", params);
                     } else if (actionName == "unsubscribe") {
                         auto serviceName = node["unsubscribeFrom"].as<std::string>();
                         fmt::print("unsubscribe from {}\n", serviceName);
@@ -80,7 +79,7 @@ struct WebSocketHandler : cndl::WebsocketHandler {
                     }
                 } else {
                     auto& viewController = userData.viewControllers.at(serviceName);
-                    viewController->dispatchSignalFromClient(actionName, params);
+                    viewController->dispatchSignalFromClient(node);
                 }
             } catch(...) {
                 fmt::print("exception when reading: \"{}\"", message);
@@ -93,9 +92,6 @@ struct WebSocketHandler : cndl::WebsocketHandler {
     void onClose(Websocket& ws) override {
         auto g = std::lock_guard(mutex);
         auto& userData = cndlUserData[&ws];
-        for (auto& [serviceName, viewController] : userData.viewControllers) {
-            viewController->dispatchSignalFromClient("unsubscribe");
-        }
         userData.viewControllers.clear();
         fmt::print("close connection\n");
         cndlUserData.erase(&ws);

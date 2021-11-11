@@ -51,15 +51,17 @@ int main(int argc, char const* const* argv) {
     });
 
     {
-        auto params = YAML::Node{};
-        params.push_back("test");
-        chatService.dispatchSignalFromClient("addText", *vc, params);
+        auto msg = YAML::Node{};
+        msg["action"] = "addText";
+        msg["params"].push_back("test");
+        vc->dispatchSignalFromClient(msg);
     }
 
     {
-        auto params = YAML::Node{};
-        params.push_back("secnd entry");
-        chatService.dispatchSignalFromClient("addText", *vc, params);
+        auto msg = YAML::Node{};
+        msg["action"] = "addText";
+        msg["params"].push_back("secnd entry");
+        vc->dispatchSignalFromClient(msg);
     }
     {
        auto vc = chatService.createViewController([](std::string_view data) {

@@ -16,7 +16,7 @@ struct ViewController;
 };*/
 
 struct ViewController {
-    using SendData = std::function<void(std::string_view)>;
+    using SendData = std::function<void(YAML::Node)>;
     using GetSize  = std::function<size_t()>;
 
     thread_local static inline SendData gSendData;

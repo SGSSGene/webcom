@@ -27,7 +27,7 @@ let createWebSocket = function(url) {
     ws.onmessage = function(evt) {
         if (evt.data) {
             let text = evt.data
-            node = YAML.parse(text);
+            let node = YAML.parse(text).params[0];
             let service = node.service;
             let action  = node.action;
             console.log(node.params);
@@ -66,9 +66,13 @@ let createWebSocket = function(url) {
             params.push(arguments[i]);
         }
         sendRaw({
-            service: service,
-            action: action,
-            params: params
+            service: "services",
+            action: "message",
+            params: [{
+                service: service,
+                action: action,
+                params: params
+            }]
         })
     };
     return {
@@ -83,15 +87,15 @@ let createWebSocket = function(url) {
                 }
                 return this
             }()
-            adapterCTor(adapter, adapter.methods)
+            let r = adapterCTor(adapter, adapter.methods)
 
             ws.dispatcher[serviceName] = adapter;
             sendRaw({
                 service: "services",
                 action:  "subscribe",
-                subscribeTo:   serviceName,
-                params:  []
+                params:  [serviceName]
             })
+            return r;
         }
     };
 };

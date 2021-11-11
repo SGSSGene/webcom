@@ -10,6 +10,39 @@
  **/
 using Chat = webcom::GuardedType<std::vector<std::string>>;
 
+struct UserViewController : webcom::ViewController {
+    webcom::Services& services;
+    std::unordered_map<std::string, std::unique_ptr<webcom::ViewController>> viewControllers;
+
+    UserViewController(webcom::Services& _services)
+        : services{_services}
+    {}
+
+    static constexpr void reflect(auto& visitor) {
+        // function that can be called by the client (webbrowser)
+        visitor("subscribe", &UserViewController::subscribe);
+        visitor("unsubscribe", &UserViewController::unsubscribe);
+        visitor("message", &UserViewController::message);
+    }
+
+    void subscribe(std::string _serviceName) {
+        viewControllers.try_emplace(_serviceName, services.subscribe(_serviceName, [&](YAML::Node _node) {
+            callBack("data")(_node);
+        }));
+    }
+
+    void unsubscribe(std::string _serviceName) {
+        viewControllers.erase(_serviceName);
+    }
+
+    void message(YAML::Node data) {
+//        auto service = data["service"].as<std::string>();
+//        viewControllers.at(service)->dispatchSignalFromClient(data["params"]);
+    }
+};
+
+
+
 /** This represents the Controller and View (MVC) of a single User accessing the chat
  *
  * Each user (connection via websocket) will have its own view
@@ -38,6 +71,21 @@ struct ChatViewController : webcom::ViewController {
 };
 
 int main(int argc, char const* const* argv) {
+    auto services = webcom::Services{};
+
+    Chat chat;
+
+    auto& userService = services.provideViewController("services", [&]() {
+        // create access, in theory we could do an access check here
+        return webcom::make<UserViewController>(services);
+    });
+/*    auto uv = userService.createViewController([](std::string_view data) {
+    });
+    userService.*/
+}
+
+
+/*int main(int argc, char const* const* argv) {
     Chat chat;
 
     auto chatService = webcom::Service("chat", [&]() {
@@ -67,4 +115,4 @@ int main(int argc, char const* const* argv) {
             fmt::print("second user:\n{}\n---\n\n", data);
         });
     }
-}
+}*/

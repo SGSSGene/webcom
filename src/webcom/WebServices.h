@@ -3,6 +3,7 @@
 #include "UserConnection.h"
 #include "Services.h"
 
+#include <fon/yaml.h>
 #include <cndl/Route.h>
 #include <cndl/Server.h>
 #include <simplyfile/socket/Host.h>
@@ -14,12 +15,48 @@
 namespace webcom {
 namespace details {
 
+struct UserViewController : ViewController {
+    Services& services;
+    std::unordered_map<std::string, std::unique_ptr<ViewController>> viewControllers;
+
+    UserViewController(Services& _services)
+        : services{_services}
+    {}
+
+    static constexpr void reflect(auto& visitor) {
+        // function that can be called by the client (webbrowser)
+        visitor("subscribe", &UserViewController::subscribe);
+        visitor("unsubscribe", &UserViewController::unsubscribe);
+        visitor("message", &UserViewController::message);
+    }
+
+    void subscribe(std::string _serviceName) {
+        fmt::print("subscribing to {}\n", _serviceName);
+        viewControllers.try_emplace(_serviceName, services.subscribe(_serviceName, [this, _serviceName](YAML::Node _node) {
+            _node["service"] = _serviceName;
+            callBack("message")(_node);
+        }));
+    }
+
+    void unsubscribe(std::string _serviceName) {
+        viewControllers.erase(_serviceName);
+    }
+
+    void message(YAML::Node data) {
+        std::cout << "received message\n";
+        auto service = data["service"].as<std::string>();
+        viewControllers.at(service)->dispatchSignalFromClient(data);
+    }
+};
+
+
+
 struct WebSocketHandler : cndl::WebsocketHandler {
-    using UserData = UserConnection;
+    using UserData = std::unique_ptr<ViewController>;
 
     using Websocket = cndl::Websocket;
     using Request   = cndl::Request;
-    std::map<Websocket*, UserData> cndlUserData;
+    std::unordered_map<Websocket*, UserData> cndlUserData;
     Services& services;
     std::mutex& mutex;
     WebSocketHandler(Services& _services, std::mutex& _mutex)
@@ -27,18 +64,15 @@ struct WebSocketHandler : cndl::WebsocketHandler {
         , mutex {_mutex}
     {}
 
-    bool canOpen(Request const&) {
-        fmt::print("request new connection\n");
-        return true;
-    }
-
     void onOpen([[maybe_unused]] Request const& request, Websocket& ws) {
         auto g = std::lock_guard(mutex);
-        auto [iter, success] = cndlUserData.try_emplace(&ws);
-        auto& userData = iter->second;
-        userData.sendData = [&ws](std::string_view msg) {
-            ws.send(msg);
-        };
+        auto viewController = services.subscribe("services", [&ws](YAML::Node node) {
+            YAML::Emitter emit;
+            emit << node;
+
+            ws.send(std::string{emit.c_str()});
+        });
+        cndlUserData.try_emplace(&ws, std::move(viewController));
         fmt::print("new connection\n");
     }
 
@@ -52,32 +86,7 @@ struct WebSocketHandler : cndl::WebsocketHandler {
                 if (not node.IsMap()) {
                     throw std::runtime_error("invalid message");
                 }
-                auto serviceName = node["service"].as<std::string>();
-                auto actionName  = node["action"].as<std::string>();
-                auto params      = node["params"];
-
-                if (serviceName == "services") {
-                    if (actionName == "subscribe") {
-                        auto serviceName = node["subscribeTo"].as<std::string>();
-                        fmt::print("subscribe to {}\n", serviceName);
-
-                        auto& service = services.getService(serviceName);
-                        auto [iter, succ] = userData.viewControllers.try_emplace(serviceName, service.createViewController(userData.sendData));
-                    } else if (actionName == "unsubscribe") {
-                        auto serviceName = node["unsubscribeFrom"].as<std::string>();
-                        fmt::print("unsubscribe from {}\n", serviceName);
-
-                        auto& service = services.getService(serviceName);
-                        auto& viewController = userData.viewControllers.at(serviceName);
-
-                        userData.viewControllers.erase(serviceName);
-                    } else {
-                        throw std::runtime_error(fmt::format("unknown action \"{}\"", actionName));
-                    }
-                } else {
-                    auto& viewController = userData.viewControllers.at(serviceName);
-                    viewController->dispatchSignalFromClient(node);
-                }
+                userData->dispatchSignalFromClient(node);
             } catch(...) {
                 fmt::print("exception when reading: \"{}\"", message);
                 throw;
@@ -88,8 +97,6 @@ struct WebSocketHandler : cndl::WebsocketHandler {
 
     void onClose(Websocket& ws) override {
         auto g = std::lock_guard(mutex);
-        auto& userData = cndlUserData[&ws];
-        userData.viewControllers.clear();
         fmt::print("close connection\n");
         cndlUserData.erase(&ws);
     }
@@ -134,13 +141,19 @@ struct WebServices : Services {
     using Route = cndl::Route<cndl::OptResponse(cndl::Request const&, std::string_view)>;
     std::vector<Route> routes;
 
+    Service& userService;
     WebServices(std::filesystem::path defaultFile, std::vector<std::tuple<std::string, std::filesystem::path>> paths)
     : defaultRoute {std::regex{R"(/)"}, [=](cndl::Request const&) -> cndl::OptResponse {
               return serveFile(defaultFile);
          }, {.methods={"GET"}}}
+    , userService {provideViewController("services", [&]() {
+            return webcom::make<UserViewController>(*this);
+        })
+    }
     {
+
         for (auto const& [url, path] : paths) {
-            routes.emplace_back(std::regex{url}, [=](cndl::Request const&, std::string_view arg) -> cndl::OptResponse {
+            routes.emplace_back(std::regex{url}, [path=path](cndl::Request const&, std::string_view arg) -> cndl::OptResponse {
                 fmt::print("serving: {}/{}\n", std::string{path},  arg);
                 return serveFile(path / std::string{arg});
             }, Route::Options{.methods={"GET"}});

@@ -21,17 +21,13 @@ auto to_yaml(Args&&...args) -> YAML::Node {
 }
 
 template <typename ...Args>
-auto convertToMessage(std::string_view _serviceName, std::string_view _actionName, Args&&... _args) -> std::string {
+auto convertToMessage(std::string_view _serviceName, std::string_view _actionName, Args&&... _args) -> YAML::Node {
     auto node = YAML::Node{};
     node["service"] = std::string{_serviceName};
     node["action"]  = std::string{_actionName};
     node["params"]  = to_yaml(std::forward<Args>(_args)...);
 
-    YAML::Emitter emit;
-    emit << node;
-    std::stringstream ss;
-    ss << emit.c_str();
-    return ss.str();
+    return node;
 }
 
 template <typename CB>
@@ -46,6 +42,9 @@ struct FunctionSelector {
         }
     }
 };
+
+template <typename CB>
+FunctionSelector(std::string_view, CB) -> FunctionSelector<CB>;
 
 }
 
@@ -91,7 +90,7 @@ public:
     }
 
 
-    auto createViewController(std::function<void(std::string_view)> _sendData) -> std::unique_ptr<ViewController> {
+    auto createViewController(std::function<void(YAML::Node)> _sendData) -> std::unique_ptr<ViewController> {
         ViewController::gSendData = std::move(_sendData);
         ViewController::gService = this;
         auto viewController = objectCreate();

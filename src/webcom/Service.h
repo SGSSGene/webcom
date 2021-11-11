@@ -98,7 +98,9 @@ public:
     }
 
     auto createViewController(std::function<void(std::string_view)> _sendData) -> std::unique_ptr<ViewController> {
-        auto viewController = std::make_unique<ViewController>(std::move(_sendData), *this);
+        ViewController::gSendData = std::move(_sendData);
+        ViewController::gService = this;
+        auto viewController = std::make_unique<ViewController>();
         viewControllers.try_emplace(viewController.get(), objectCreate(*viewController));
 
         return viewController;

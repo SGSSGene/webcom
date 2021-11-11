@@ -14,17 +14,19 @@ struct ViewController {
     using SendData = std::function<void(std::string_view)>;
     using GetSize  = std::function<size_t()>;
 
-    SendData sendData;
-    Service& service;
+    thread_local static inline SendData gSendData;
+    thread_local static inline Service* gService{};
+    SendData sendData{std::move(gSendData)};
+    Service& service{*gService};
 
-    ViewController() = delete;
+    ViewController() = default;
     ViewController(ViewController const&) = delete;
     ViewController(ViewController&&) = default;
 
-    ViewController(SendData _sendData, Service& _service)
+/*    ViewController(SendData _sendData, Service& _service)
         : sendData{std::move(_sendData)}
         , service{_service}
-    {}
+    {}*/
     ~ViewController();
 
     auto operator=(ViewController const&) -> ViewController = delete;

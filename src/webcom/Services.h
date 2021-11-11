@@ -6,6 +6,9 @@
 
 namespace webcom {
 
+class User {
+};
+
 class Services {
 private:
     std::map<std::string, Service> serviceList;

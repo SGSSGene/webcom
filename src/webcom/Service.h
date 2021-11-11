@@ -64,7 +64,7 @@ public:
     Service(std::string_view _name, CB cb)
         : name {_name}
     {
-        using Return = typename webcom::signature_t<CB>::return_t;
+        using Return = typename webcom::signature_t<CB>::return_t::element_type;
         objectCreate = [cb](ViewController& viewController) -> std::unique_ptr<ViewControllerBase> {
             return cb(viewController);
         };
@@ -76,11 +76,10 @@ public:
                 using Params = typename signature_t<std::decay_t<decltype(func)>>::params_t;
                 auto argsAsTuple = fon::yaml::deserialize<Params>(msg);
                 std::apply([&](auto&&... args) {
-                    ((*object).*func)(std::forward<decltype(args)>(args)...);
+                    (object.*func)(std::forward<decltype(args)>(args)...);
                 }, argsAsTuple);
             }};
-            using R2 = typename Return::element_type;
-            R2::reflect(selector);
+            Return::reflect(selector);
         };
     }
 
@@ -97,6 +96,14 @@ public:
     operator bool() const {
         return not viewControllers.empty();
     }
+
+    auto createViewController(std::function<void(std::string_view)>& _sendData, std::function<size_t()>& _getSize) -> std::unique_ptr<ViewController> {
+        auto viewController = std::make_unique<ViewController>(_sendData, _getSize, *this);
+        addViewController(*viewController);
+        return viewController;
+    }
+
+
 
     void addViewController(ViewController& viewController) {
         viewControllers.try_emplace(&viewController, objectCreate(viewController));

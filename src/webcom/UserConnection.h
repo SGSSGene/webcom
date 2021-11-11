@@ -14,7 +14,7 @@ namespace webcom {
 struct UserConnection {
     std::function<void(std::string_view)>         sendData;
     std::function<size_t()>                       getBufferedAmount;
-    std::map<std::string, webcom::ViewController> viewControllers;
+    std::map<std::string, std::unique_ptr<webcom::ViewController>> viewControllers;
 };
 
 }

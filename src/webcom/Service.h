@@ -50,14 +50,14 @@ struct FunctionSelector {
 }
 
 struct Service {
-    using Dispatcher = std::function<void(std::string_view, std::any&, YAML::Node)>;
+    using Dispatcher = std::function<void(std::string_view, ViewControllerBase&, YAML::Node)>;
 
     template <typename> friend struct FunctionSelector;
 private:
-    std::string                                   name;
-    std::function<std::any(ViewController&)>      objectCreate;
-    Dispatcher                                    objectDispatch;
-    std::unordered_map<ViewController*, std::any> viewControllers;
+    std::string                                                              name;
+    std::function<std::unique_ptr<ViewControllerBase>(ViewController&)>      objectCreate;
+    Dispatcher                                                               objectDispatch;
+    std::unordered_map<ViewController*, std::unique_ptr<ViewControllerBase>> viewControllers;
 public:
 
     template <typename CB>
@@ -65,12 +65,12 @@ public:
         : name {_name}
     {
         using Return = typename webcom::signature_t<CB>::return_t;
-        objectCreate = [cb](ViewController& viewController) -> std::any {
-            return std::any(cb(viewController));
+        objectCreate = [cb](ViewController& viewController) -> std::unique_ptr<ViewControllerBase> {
+            return cb(viewController);
         };
 
-        objectDispatch = [](std::string_view action, std::any& unknown_object, YAML::Node msg) {
-            auto& object = std::any_cast<Return&>(unknown_object);
+        objectDispatch = [](std::string_view action, ViewControllerBase& unknown_object, YAML::Node msg) {
+            auto& object = dynamic_cast<Return&>(unknown_object);
 
             auto selector = detail::FunctionSelector{action, [&](auto func) {
                 using Params = typename signature_t<std::decay_t<decltype(func)>>::params_t;
@@ -87,7 +87,7 @@ public:
     auto getName() const -> std::string_view {
         return name;
     }
-    auto getViewControllers() const -> std::unordered_map<ViewController*, std::any> const& {
+    auto getViewControllers() const -> std::unordered_map<ViewController*, std::unique_ptr<ViewControllerBase>> const& {
         return viewControllers;
     }
 
@@ -111,7 +111,7 @@ public:
         if (iter == end(viewControllers)) {
             return;
         }
-        objectDispatch(_name, iter->second, _node);
+        objectDispatch(_name, *iter->second, _node);
     }
 };
 

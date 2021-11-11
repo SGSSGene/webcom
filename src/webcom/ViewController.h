@@ -6,6 +6,10 @@ namespace webcom {
 
 struct Service;
 
+struct ViewControllerBase {
+    virtual ~ViewControllerBase() = default;
+};
+
 struct ViewController {
     using SendData = std::function<void(std::string_view)>;
     using GetSize  = std::function<size_t()>;
@@ -61,7 +65,7 @@ struct ViewController {
 
     template <typename T, typename ...Args>
     auto make(Args&&... args) {
-        return std::make_shared<T>(std::forward<Args>(args)...);
+        return std::make_unique<T>(std::forward<Args>(args)...);
     }
 };
 }

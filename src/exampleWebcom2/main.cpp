@@ -43,7 +43,7 @@ int main(int argc, char const* const* argv) {
 
     auto chatService = webcom::Service("chat", [&]() {
         // create access, in theory we could do an access check here
-        return webcom::ViewController::make<ChatViewController>(chat);
+        return webcom::make<ChatViewController>(chat);
     });
 
     auto vc = chatService.createViewController([](std::string_view data) {
@@ -67,8 +67,5 @@ int main(int argc, char const* const* argv) {
        auto vc = chatService.createViewController([](std::string_view data) {
             fmt::print("second user:\n{}\n---\n\n", data);
         });
-
     }
-
-//    vc->dispatchMessageFrom(msg);
 }

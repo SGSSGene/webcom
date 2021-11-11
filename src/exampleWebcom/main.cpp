@@ -56,7 +56,7 @@ int main(int argc, char const* const* argv) {
 
     webServices.provideViewController("chat", [&]() {
         // create access, in theory we could do an access check here
-        return webcom::ViewController::make<ChatViewController>(chat);
+        return webcom::make<ChatViewController>(chat);
     });
 
     simplyfile::Epoll epoll;

@@ -75,15 +75,16 @@ struct ViewController {
         return Call{Call::Type::Others, *this, _actionName};
     }
 
-    template <typename T, typename ...Args>
-    static auto make(Args&&... args) {
-//        ViewControllerBase::gViewController = this;
-        return std::make_unique<T>(std::forward<Args>(args)...);
-    }
-
     void dispatchSignalFromClient(YAML::Node _node);
 };
+
+template <typename T, typename ...Args>
+static auto make(Args&&... args) {
+    return std::make_unique<T>(std::forward<Args>(args)...);
 }
+
+}
+
 #include "Service.h"
 
 namespace webcom {

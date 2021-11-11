@@ -39,9 +39,6 @@ struct WebSocketHandler : cndl::WebsocketHandler {
         userData.sendData = [&ws](std::string_view msg) {
             ws.send(msg);
         };
-        userData.getBufferedAmount = [&ws]() {
-            return ws.getOutBufferSize();
-        };
         fmt::print("new connection\n");
     }
 
@@ -68,7 +65,7 @@ struct WebSocketHandler : cndl::WebsocketHandler {
                         //userData.viewControllers.try_emplace(serviceName, ViewController{userData.sendData, userData.getBufferedAmount, service});
                         //auto& viewController = userData.viewControllers.at(serviceName);
                         //service.addViewController(viewController);
-                        auto [iter, succ] = userData.viewControllers.try_emplace(serviceName, service.createViewController(userData.sendData, userData.getBufferedAmount));
+                        auto [iter, succ] = userData.viewControllers.try_emplace(serviceName, service.createViewController(userData.sendData));
                         iter->second->dispatchSignalFromClient("subscribe", params);
                     } else if (actionName == "unsubscribe") {
                         auto serviceName = node["unsubscribeFrom"].as<std::string>();

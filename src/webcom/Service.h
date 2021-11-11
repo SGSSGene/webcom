@@ -54,10 +54,10 @@ struct Service {
 
     template <typename> friend struct FunctionSelector;
 private:
-    std::string                                               name;
-    std::function<std::unique_ptr<ViewController>()>      objectCreate;
-    Dispatcher                                                               objectDispatch;
-    std::unordered_map<ViewController*, ViewController*> viewControllers;
+    std::string                                       name;
+    std::function<std::unique_ptr<ViewController>()>  objectCreate;
+    Dispatcher                                        objectDispatch;
+    std::unordered_set<ViewController*>               viewControllers;
 public:
 
     template <typename CB>
@@ -86,23 +86,17 @@ public:
     auto getName() const -> std::string_view {
         return name;
     }
-    auto getViewControllers() const -> std::unordered_map<ViewController*, ViewController*> const& {
+    auto getViewControllers() const -> std::unordered_set<ViewController*> const& {
         return viewControllers;
     }
 
-
-    /** does this Service have any connections?
-     */
-    operator bool() const {
-        return not viewControllers.empty();
-    }
 
     auto createViewController(std::function<void(std::string_view)> _sendData) -> std::unique_ptr<ViewController> {
         ViewController::gSendData = std::move(_sendData);
         ViewController::gService = this;
         auto viewController = objectCreate();
         auto ptr = viewController.get();
-        viewControllers.try_emplace(ptr, ptr);
+        viewControllers.insert(viewController.get());
 
         return viewController;
     }
@@ -112,11 +106,7 @@ public:
     }
 
     void dispatchSignalFromClient(std::string_view _name, ViewController& _viewController, YAML::Node _node) {
-        auto iter = viewControllers.find(&_viewController);
-        if (iter == end(viewControllers)) {
-            return;
-        }
-        objectDispatch(_name, *iter->second, _node);
+        objectDispatch(_name, _viewController, _node);
     }
 };
 

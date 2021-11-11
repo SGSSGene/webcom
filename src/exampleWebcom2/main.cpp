@@ -49,8 +49,24 @@ int main(int argc, char const* const* argv) {
     auto vc = chatService.createViewController([](std::string_view data) {
         fmt::print("sending data:\n{}\n---\n\n", data);
     });
-    auto msg = YAML::Node{};
-    msg["action"] = "addText";
-    msg["params"].push_back("test");
-//    vc->viewController.dispatchMessageFromClient(msg);
+
+    {
+        auto params = YAML::Node{};
+        params.push_back("test");
+        chatService.dispatchSignalFromClient("addText", *vc, params);
+    }
+
+    {
+        auto params = YAML::Node{};
+        params.push_back("secnd entry");
+        chatService.dispatchSignalFromClient("addText", *vc, params);
+    }
+    {
+       auto vc = chatService.createViewController([](std::string_view data) {
+            fmt::print("second user:\n{}\n---\n\n", data);
+        });
+
+    }
+
+//    vc->dispatchMessageFrom(msg);
 }

@@ -96,18 +96,17 @@ void ViewController::dispatchSignalFromClient(std::string_view _name, YAML::Node
     service.dispatchSignalFromClient(_name, *this, _node);
 }
 
-
 template <typename ...Args>
 void ViewController::Call::operator()(Args&&... _args) const {
     auto msg = detail::convertToMessage(viewController.service.getName(), actionName, std::forward<Args>(_args)...);
     if (type == Type::All) {
-        for (auto& [_viewController, value] : viewController.service.getViewControllers()) {
+        for (auto& _viewController : viewController.service.getViewControllers()) {
             _viewController->sendData(msg);
         }
     } else if (type == Type::Back) {
         viewController.sendData(msg);
     } else if (type == Type::Others) {
-        for (auto& [_viewController, value] : viewController.service.getViewControllers()) {
+        for (auto& _viewController : viewController.service.getViewControllers()) {
             if (_viewController != &viewController) {
                 _viewController->sendData(msg);
             }

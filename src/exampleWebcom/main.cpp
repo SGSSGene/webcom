@@ -31,8 +31,7 @@ struct ChatViewController : webcom::ViewController {
     }
 
     void addText(std::string str) {
-        auto&& [g, list] = *chat;
-        list.push_back(str);
+        chat->push_back(str);
         // call 'addMsg' of all clients
         callAll("addMsg")(str);
     }

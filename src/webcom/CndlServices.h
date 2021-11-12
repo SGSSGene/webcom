@@ -69,11 +69,11 @@ struct WebSocketHandler : cndl::WebsocketHandler {
 };
 
 
-struct WebServices : Services {
+struct CndlServices : Services {
     WebSocketHandler handler{*this};
     cndl::WSRoute<WebSocketHandler> wsroute;
 
-    WebServices(cndl::Server& _cndlServer, std::string const& _resource)
+    CndlServices(cndl::Server& _cndlServer, std::string const& _resource)
         : wsroute   {std::regex{_resource}, handler}
     {
         provideViewController("services", [&]() {
@@ -84,5 +84,5 @@ struct WebServices : Services {
 };
 
 }
-using WebServices = details::WebServices;
+using CndlServices = details::CndlServices;
 }

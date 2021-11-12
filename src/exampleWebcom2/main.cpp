@@ -10,39 +10,6 @@
  **/
 using Chat = webcom::GuardedType<std::vector<std::string>>;
 
-struct UserViewController : webcom::ViewController {
-    webcom::Services& services;
-    std::unordered_map<std::string, std::unique_ptr<webcom::ViewController>> viewControllers;
-
-    UserViewController(webcom::Services& _services)
-        : services{_services}
-    {}
-
-    static constexpr void reflect(auto& visitor) {
-        // function that can be called by the client (webbrowser)
-        visitor("subscribe", &UserViewController::subscribe);
-        visitor("unsubscribe", &UserViewController::unsubscribe);
-        visitor("message", &UserViewController::message);
-    }
-
-    void subscribe(std::string _serviceName) {
-        viewControllers.try_emplace(_serviceName, services.subscribe(_serviceName, [&](YAML::Node _node) {
-            callBack("data")(_node);
-        }));
-    }
-
-    void unsubscribe(std::string _serviceName) {
-        viewControllers.erase(_serviceName);
-    }
-
-    void message(YAML::Node data) {
-//        auto service = data["service"].as<std::string>();
-//        viewControllers.at(service)->dispatchSignalFromClient(data["params"]);
-    }
-};
-
-
-
 /** This represents the Controller and View (MVC) of a single User accessing the chat
  *
  * Each user (connection via websocket) will have its own view
@@ -77,11 +44,66 @@ int main(int argc, char const* const* argv) {
 
     auto& userService = services.provideViewController("services", [&]() {
         // create access, in theory we could do an access check here
-        return webcom::make<UserViewController>(services);
+        return webcom::make<webcom::UserConnectionViewController>(services);
     });
-/*    auto uv = userService.createViewController([](std::string_view data) {
+    auto& chatService = services.provideViewController("chat", [&]() {
+        return webcom::make<ChatViewController>(chat);
     });
-    userService.*/
+
+    auto expectedMessagesToBeSend = std::vector<std::string>{
+        "action: message\n"
+        "params:\n"
+        "  0:\n"
+        "    action: init\n"
+        "    params:\n"
+        "      0: ~\n"
+        "    id: 0",
+        "action: message\n"
+        "params:\n"
+        "  0:\n"
+        "    action: addMsg\n"
+        "    params:\n"
+        "      0: uiae\n"
+        "    id: 0",
+    };
+    auto uv = userService.createViewController([&](YAML::Node node) {
+        YAML::Emitter emit;
+        emit << node;
+        auto actual = std::string{emit.c_str()};
+
+        if (expectedMessagesToBeSend.empty()) {
+            fmt::print("got:\n{}\n---\n", actual);
+            throw std::runtime_error("didn't expect any message to be send");
+        }
+        if (expectedMessagesToBeSend[0] != actual) {
+            fmt::print("expected:\n{}\n---\n", expectedMessagesToBeSend[0]);
+            fmt::print("got:\n{}\n---\n", actual);
+            throw std::runtime_error("unexpected message");
+        }
+        expectedMessagesToBeSend.erase(begin(expectedMessagesToBeSend));
+    });
+
+    {
+        auto msg = YAML::Node{};
+        msg["action"] = "subscribe";
+        msg["params"].push_back(0);
+        msg["params"].push_back("chat");
+        uv->dispatchSignalFromClient(msg);
+    }
+    {
+        auto msg = YAML::Node{};
+        msg["action"] = "message";
+        msg["params"].push_back(0);
+        auto params = YAML::Node{};
+        params["action"] = "addText";
+        params["params"].push_back("uiae");
+        msg["params"].push_back(params);
+        uv->dispatchSignalFromClient(msg);
+    }
+
+    if (!expectedMessagesToBeSend.empty()) {
+        throw std::runtime_error("didn't send all expected messages");
+    }
 }
 
 

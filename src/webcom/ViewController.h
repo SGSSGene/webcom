@@ -6,8 +6,6 @@ namespace webcom {
 
 struct Service;
 
-struct ViewController;
-
 struct ViewController {
     using SendData = std::function<void(YAML::Node)>;
     using GetSize  = std::function<size_t()>;

@@ -16,6 +16,7 @@ let createWebSocket = function(url) {
 
     let rObj = {};
 
+    rObj.id = 0;
     rObj.ws = new WebSocket(path);
     rObj.dispatcher = {};
     rObj.ws.binaryType = 'arraybuffer';
@@ -29,15 +30,15 @@ let createWebSocket = function(url) {
         if (evt.data) {
             let text = evt.data;
             let node = YAML.parse(text).params[0];
-            let service = node.service;
+            let id = node.id;
             let action  = node.action;
             console.log(node.params);
             let params = [];
             for (let i in node.params) {
                 params.push(node.params[i]);
             }
-            if (service in rObj.dispatcher) {
-                let methods = rObj.dispatcher[service].methods;
+            if (id in rObj.dispatcher) {
+                let methods = rObj.dispatcher[id].methods;
                 if (action in methods) {
                     methods[action](...params);
                 }
@@ -61,38 +62,39 @@ let createWebSocket = function(url) {
             }
         }
     }
-    let send = function(service, action) {
+    let send = function(id, action) {
         let params = [];
         for (let i = 2; i < arguments.length; i++) {
             params.push(arguments[i]);
         }
         sendRaw({
-            service: "services",
             action: "message",
-            params: [{
-                service: service,
+            params: [id, {
                 action: action,
                 params: params
             }]
         });
     };
-    rObj.subscribe = function(serviceName, adapterCTor) {
+    rObj.subscribe = function(serviceName) {
+        let id = rObj.id++;
+
         let adapter = new function() {
             this.methods = {};
+            this.id = id;
             this.serviceName = serviceName;
             this.call = function(actionName) {
                 return function() {
-                    send(serviceName, actionName, ...arguments);
+                    send(id, actionName, ...arguments);
                 }
             }
             return this;
         }()
 
-        rObj.dispatcher[serviceName] = adapter;
+        rObj.dispatcher[id] = adapter;
         sendRaw({
             service: "services",
             action:  "subscribe",
-            params:  [serviceName]
+            params:  [id, serviceName]
         });
         return adapter;
     }

@@ -10,7 +10,7 @@ namespace webcom {
 
 struct UserConnectionViewController : ViewController {
     Services& services;
-    std::unordered_map<std::string, std::unique_ptr<ViewController>> viewControllers;
+    std::unordered_map<size_t, std::unique_ptr<ViewController>> viewControllers;
 
     UserConnectionViewController(Services& _services)
         : services{_services}
@@ -23,20 +23,19 @@ struct UserConnectionViewController : ViewController {
         visitor("message",     &UserConnectionViewController::message);
     }
 
-    void subscribe(std::string _serviceName) {
-        viewControllers.try_emplace(_serviceName, services.subscribe(_serviceName, [this, _serviceName](YAML::Node _node) {
-            _node["service"] = _serviceName;
+    void subscribe(size_t _id, std::string _serviceName) {
+        viewControllers.try_emplace(_id, services.subscribe(std::move(_serviceName), [this, _id](YAML::Node _node) {
+            _node["id"] = _id;
             callBack("message")(_node);
         }));
     }
 
-    void unsubscribe(std::string _serviceName) {
-        viewControllers.erase(_serviceName);
+    void unsubscribe(size_t _id) {
+        viewControllers.erase(_id);
     }
 
-    void message(YAML::Node data) {
-        auto service = data["service"].as<std::string>();
-        viewControllers.at(service)->dispatchSignalFromClient(data);
+    void message(size_t id, YAML::Node data) {
+        viewControllers.at(id)->dispatchSignalFromClient(data);
     }
 };
 

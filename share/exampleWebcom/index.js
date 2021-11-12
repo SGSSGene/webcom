@@ -19,9 +19,9 @@ function initChat(adapter) {
 
     adapter.methods.init = function(list) {
         if (list) {
-        for (let entry of list) {
-            obj.onAddMessage(entry);
-        }
+            for (let entry of list) {
+                obj.onAddMessage(entry);
+            }
         }
     }
     adapter.methods.addMsg = function(msg) {

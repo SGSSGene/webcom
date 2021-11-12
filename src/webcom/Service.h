@@ -23,7 +23,6 @@ auto to_yaml(Args&&...args) -> YAML::Node {
 template <typename ...Args>
 auto convertToMessage(std::string_view _serviceName, std::string_view _actionName, Args&&... _args) -> YAML::Node {
     auto node = YAML::Node{};
-    node["service"] = std::string{_serviceName};
     node["action"]  = std::string{_actionName};
     node["params"]  = to_yaml(std::forward<Args>(_args)...);
 
@@ -60,8 +59,8 @@ private:
 public:
 
     template <typename CB>
-    Service(std::string_view _name, CB cb)
-        : name {_name}
+    Service(std::string _name, CB cb)
+        : name {std::move(_name)}
     {
         objectCreate = [cb]() -> std::unique_ptr<ViewController> {
             return cb();

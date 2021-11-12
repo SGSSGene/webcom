@@ -34,20 +34,21 @@ FunctionSelector(std::string_view, CB) -> FunctionSelector<CB>;
 }
 
 struct Service {
-    using Dispatcher = std::function<void(ViewController&, YAML::Node)>;
-
-    template <typename> friend struct FunctionSelector;
 private:
-    std::function<std::unique_ptr<ViewController>()>  objectCreate;
-    Dispatcher                                        objectDispatch;
-    std::unordered_set<ViewController*>               viewControllers;
-public:
+    using Factory        = std::function<std::unique_ptr<ViewController>()>;
+    using Dispatcher     = std::function<void(ViewController&, YAML::Node)>;
+    using ControllerList = std::unordered_set<ViewController*>;
 
+    Factory        viewControllerFactory;
+    Dispatcher     viewControllerDispatcher;
+    ControllerList activeViewControllers;
+
+public:
     template <typename CB>
     Service(CB cb) {
-        objectCreate = std::move(cb);
+        viewControllerFactory = std::move(cb);
 
-        objectDispatch = [](ViewController& viewController, YAML::Node msg) {
+        viewControllerDispatcher = [](ViewController& viewController, YAML::Node msg) {
             using TypedViewController = typename webcom::signature_t<CB>::return_t::element_type;
             auto& typedViewController = dynamic_cast<TypedViewController&>(viewController);
 
@@ -62,27 +63,26 @@ public:
         };
     }
 
-    auto getViewControllers() const -> std::unordered_set<ViewController*> const& {
-        return viewControllers;
+    auto getViewControllers() const -> auto const& {
+        return activeViewControllers;
     }
-
 
     auto createViewController(std::function<void(YAML::Node)> _sendData) -> std::unique_ptr<ViewController> {
         ViewController::gSendData = std::move(_sendData);
         ViewController::gService = this;
-        auto viewController = objectCreate();
+        auto viewController = viewControllerFactory();
         auto ptr = viewController.get();
-        viewControllers.insert(viewController.get());
+        activeViewControllers.insert(viewController.get());
 
         return viewController;
     }
 
     void removeViewController(ViewController& viewController) {
-        viewControllers.erase(&viewController);
+        activeViewControllers.erase(&viewController);
     }
 
     void dispatchSignalFromClient(ViewController& _viewController, YAML::Node _node) {
-        objectDispatch(_viewController, _node);
+        viewControllerDispatcher(_viewController, _node);
     }
 };
 

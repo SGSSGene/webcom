@@ -7,7 +7,11 @@ function initChat(adapter) {
     inputTag.onkeyup =  function(event) {
         if (event.keyCode === 13) {
             event.preventDefault();
-            adapter.call("addText")(inputTag.value);
+            if (inputTag.value == "exit") {
+                adapter.unsubscribe();
+            } else {
+                adapter.call("addText")(inputTag.value);
+            }
             inputTag.value = "";
         }
     };

@@ -1,15 +1,3 @@
-/*var unsubscribe = function(handler) {
-    delete dispatcher[handler.service];
-
-    sendRaw({
-        service: "services",
-        action:  "unsubscribe",
-        unsubscribeFrom: service
-    })
-    handler.service = null;
-    console.log("unsubscribe");
-};*/
-
 let createWebSocket = function(url) {
     let path = "ws://" + window.location.host + "/" + url;
     console.log("opening new ws " + path);
@@ -76,25 +64,26 @@ let createWebSocket = function(url) {
         });
     };
     rObj.subscribe = function(serviceName) {
-        let id = rObj.id++;
 
-        let adapter = new function() {
-            this.methods = {};
-            this.id = id;
-            this.serviceName = serviceName;
-            this.call = function(actionName) {
-                return function() {
-                    send(id, actionName, ...arguments);
-                }
+        let adapter = {};
+        adapter.methods = {};
+        adapter.id = rObj.id++;
+        adapter.call = function(actionName) {
+            return function() {
+                send(adapter.id, actionName, ...arguments);
             }
-            return this;
-        }()
+        };
+        adapter.unsubscribe = function() {
+            sendRaw({
+                action:  "unsubscribe",
+                params:  [adapter.id]
+            });
+        };
 
-        rObj.dispatcher[id] = adapter;
+        rObj.dispatcher[adapter.id] = adapter;
         sendRaw({
-            service: "services",
             action:  "subscribe",
-            params:  [id, serviceName]
+            params:  [adapter.id, serviceName]
         });
         return adapter;
     }

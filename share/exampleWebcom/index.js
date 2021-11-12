@@ -1,34 +1,36 @@
-function initChat(ws, methods) {
+function initChat(adapter) {
+    let obj = {};
+
     let msgsTag  = document.getElementById("msgs");
 
     let inputTag  = document.getElementById("input");
     inputTag.onkeyup =  function(event) {
         if (event.keyCode === 13) {
             event.preventDefault();
-            ws.call("addText")(inputTag.value);
+            adapter.call("addText")(inputTag.value);
             inputTag.value = "";
         }
     };
-
-
-    let addMessage = function(msg) {
+    obj.onAddMessage = function(msg) {
         let tag = document.createElement("div");
         tag.innerHTML = msg
         msgsTag.appendChild(tag);
-    };
+    }
 
-    methods.init = function(list) {
+    adapter.methods.init = function(list) {
+        if (list) {
         for (let entry of list) {
-            addMessage(entry);
+            obj.onAddMessage(entry);
+        }
         }
     }
-    methods.addMsg = function(msg) {
-        addMessage(msg);
+    adapter.methods.addMsg = function(msg) {
+        obj.onAddMessage(msg);
     }
+    return obj;
 }
 
 window.onload = function() {
     let ws = createWebSocket("ws");
-
-    ws.subscribe("chat", initChat);
+    let chat = initChat(ws.subscribe("chat"));
 }

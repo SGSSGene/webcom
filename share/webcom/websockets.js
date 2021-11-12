@@ -11,20 +11,21 @@
 };*/
 
 let createWebSocket = function(url) {
-    let path = "ws://" + window.location.host + "/" + url
-    console.log("opening new ws " + path)
+    let path = "ws://" + window.location.host + "/" + url;
+    console.log("opening new ws " + path);
 
-    let ws = new WebSocket(path)
-    ws.dispatcher = {}
-    this.ws = ws
-    ws.binaryType = 'arraybuffer';
-    ws.isOpen = false;
-    ws.receiveCB = [];
-    ws.onopen = function(evt) {
-        ws.isOpen = true;
+    let rObj = {};
+
+    rObj.ws = new WebSocket(path);
+    rObj.dispatcher = {};
+    rObj.ws.binaryType = 'arraybuffer';
+    rObj.isOpen = false;
+    rObj.receiveCB = [];
+    rObj.ws.onopen = function(evt) {
+        rObj.isOpen = true;
     }
 
-    ws.onmessage = function(evt) {
+    rObj.ws.onmessage = function(evt) {
         if (evt.data) {
             let text = evt.data
             let node = YAML.parse(text).params[0];
@@ -35,28 +36,28 @@ let createWebSocket = function(url) {
             for (let i in node.params) {
                 params.push(node.params[i]);
             }
-            if (service in ws.dispatcher) {
-                let methods = ws.dispatcher[service].methods;
+            if (service in rObj.dispatcher) {
+                let methods = rObj.dispatcher[service].methods;
                 if (action in methods) {
                     methods[action](...params)
                 }
             }
         }
     }
-    ws.onclose = function(evt) {
-        ws.isOpen = false;
+    rObj.ws.onclose = function(evt) {
+        rObj.isOpen = false;
     }
-    ws.onerror = function(evt) {
+    rObj.ws.onerror = function(evt) {
         console.log("some error happend" +evt)
     }
     let sendRaw = function(msg) {
-        if (ws.isOpen) {
-            ws.send(JSON.stringify(msg));
+        if (rObj.isOpen) {
+            rObj.ws.send(JSON.stringify(msg));
         } else {
-            let prevFunc = ws.onopen;
-            ws.onopen = function(evt) {
+            let prevFunc = rObj.ws.onopen;
+            rObj.ws.onopen = function(evt) {
                 prevFunc(evt);
-                ws.send(JSON.stringify(msg));
+                rObj.ws.send(JSON.stringify(msg));
             }
         }
     }
@@ -75,27 +76,25 @@ let createWebSocket = function(url) {
             }]
         })
     };
-    return {
-        subscribe: function(serviceName, adapterCTor) {
-            let adapter = new function() {
-                this.methods = {}
-                this.serviceName = serviceName
-                this.call = function(actionName) {
-                    return function() {
-                        send(serviceName, actionName, ...arguments)
-                    }
+    rObj.subscribe = function(serviceName, adapterCTor) {
+        let adapter = new function() {
+            this.methods = {};
+            this.serviceName = serviceName;
+            this.call = function(actionName) {
+                return function() {
+                    send(serviceName, actionName, ...arguments)
                 }
-                return this
-            }()
-            let r = adapterCTor(adapter, adapter.methods)
+            }
+            return this
+        }()
 
-            ws.dispatcher[serviceName] = adapter;
-            sendRaw({
-                service: "services",
-                action:  "subscribe",
-                params:  [serviceName]
-            })
-            return r;
-        }
-    };
+        rObj.dispatcher[serviceName] = adapter;
+        sendRaw({
+            service: "services",
+            action:  "subscribe",
+            params:  [serviceName]
+        })
+        return adapter;
+    }
+    return rObj;
 };

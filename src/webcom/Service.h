@@ -15,20 +15,6 @@ namespace webcom {
 
 namespace detail {
 
-template <typename ...Args>
-auto to_yaml(Args&&...args) -> YAML::Node {
-    return fon::yaml::serialize<std::tuple<std::decay_t<Args>...>>(std::tuple{std::forward<Args>(args)...});
-}
-
-template <typename ...Args>
-auto convertToMessage(std::string_view _serviceName, std::string_view _actionName, Args&&... _args) -> YAML::Node {
-    auto node = YAML::Node{};
-    node["action"]  = std::string{_actionName};
-    node["params"]  = to_yaml(std::forward<Args>(_args)...);
-
-    return node;
-}
-
 template <typename CB>
 struct FunctionSelector {
     std::string_view name;

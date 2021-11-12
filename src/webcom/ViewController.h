@@ -8,13 +8,6 @@ struct Service;
 
 struct ViewController;
 
-/*struct ViewControllerBase {
-    thread_local static inline ViewController* gViewController;
-    ViewController& viewController{*gViewController};
-
-    virtual ~ViewControllerBase() = default;
-};*/
-
 struct ViewController {
     using SendData = std::function<void(YAML::Node)>;
     using GetSize  = std::function<size_t()>;
@@ -24,21 +17,14 @@ struct ViewController {
     SendData sendData{std::move(gSendData)};
     Service& service{*gService};
 
-    ViewController() {
-
-    }
+    ViewController() = default;
     ViewController(ViewController const&) = delete;
     ViewController(ViewController&&) = delete;
 
-/*    ViewController(SendData _sendData, Service& _service)
-        : sendData{std::move(_sendData)}
-        , service{_service}
-    {}*/
     virtual ~ViewController();
 
     auto operator=(ViewController const&) -> ViewController = delete;
     auto operator=(ViewController&&) -> ViewController = delete;
-
 
     struct Call {
         enum class Type {All, Back, Others};
@@ -86,6 +72,22 @@ static auto make(Args&&... args) {
 
 namespace webcom {
 
+namespace detail {
+template <typename ...Args>
+auto to_yaml(Args&&...args) -> YAML::Node {
+    return fon::yaml::serialize<std::tuple<std::decay_t<Args>...>>(std::tuple{std::forward<Args>(args)...});
+}
+
+template <typename ...Args>
+auto convertToMessage(std::string_view _actionName, Args&&... _args) -> YAML::Node {
+    auto node = YAML::Node{};
+    node["action"]  = std::string{_actionName};
+    node["params"]  = to_yaml(std::forward<Args>(_args)...);
+
+    return node;
+}
+}
+
 ViewController::~ViewController() {
     service.removeViewController(*this);
 }
@@ -96,7 +98,7 @@ void ViewController::dispatchSignalFromClient(YAML::Node _node) {
 
 template <typename ...Args>
 void ViewController::Call::operator()(Args&&... _args) const {
-    auto msg = detail::convertToMessage(viewController.service.getName(), actionName, std::forward<Args>(_args)...);
+    auto msg = detail::convertToMessage(actionName, std::forward<Args>(_args)...);
     if (type == Type::All) {
         for (auto& _viewController : viewController.service.getViewControllers()) {
             _viewController->sendData(msg);

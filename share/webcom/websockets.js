@@ -27,7 +27,7 @@ let createWebSocket = function(url) {
 
     rObj.ws.onmessage = function(evt) {
         if (evt.data) {
-            let text = evt.data
+            let text = evt.data;
             let node = YAML.parse(text).params[0];
             let service = node.service;
             let action  = node.action;
@@ -39,7 +39,7 @@ let createWebSocket = function(url) {
             if (service in rObj.dispatcher) {
                 let methods = rObj.dispatcher[service].methods;
                 if (action in methods) {
-                    methods[action](...params)
+                    methods[action](...params);
                 }
             }
         }
@@ -48,7 +48,7 @@ let createWebSocket = function(url) {
         rObj.isOpen = false;
     }
     rObj.ws.onerror = function(evt) {
-        console.log("some error happend" +evt)
+        console.log("some error happend" +evt);
     }
     let sendRaw = function(msg) {
         if (rObj.isOpen) {
@@ -62,7 +62,7 @@ let createWebSocket = function(url) {
         }
     }
     let send = function(service, action) {
-        let params = []
+        let params = [];
         for (let i = 2; i < arguments.length; i++) {
             params.push(arguments[i]);
         }
@@ -74,7 +74,7 @@ let createWebSocket = function(url) {
                 action: action,
                 params: params
             }]
-        })
+        });
     };
     rObj.subscribe = function(serviceName, adapterCTor) {
         let adapter = new function() {
@@ -82,10 +82,10 @@ let createWebSocket = function(url) {
             this.serviceName = serviceName;
             this.call = function(actionName) {
                 return function() {
-                    send(serviceName, actionName, ...arguments)
+                    send(serviceName, actionName, ...arguments);
                 }
             }
-            return this
+            return this;
         }()
 
         rObj.dispatcher[serviceName] = adapter;
@@ -93,7 +93,7 @@ let createWebSocket = function(url) {
             service: "services",
             action:  "subscribe",
             params:  [serviceName]
-        })
+        });
         return adapter;
     }
     return rObj;

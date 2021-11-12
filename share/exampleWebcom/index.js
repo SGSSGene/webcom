@@ -13,7 +13,7 @@ function initChat(adapter) {
     };
     obj.onAddMessage = function(msg) {
         let tag = document.createElement("div");
-        tag.innerHTML = msg
+        tag.innerHTML = msg;
         msgsTag.appendChild(tag);
     }
 

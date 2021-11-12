@@ -45,9 +45,7 @@ public:
 
     template <typename CB>
     Service(CB cb) {
-        objectCreate = [cb]() -> std::unique_ptr<ViewController> {
-            return cb();
-        };
+        objectCreate = std::move(cb);
 
         objectDispatch = [](ViewController& viewController, YAML::Node msg) {
             using TypedViewController = typename webcom::signature_t<CB>::return_t::element_type;

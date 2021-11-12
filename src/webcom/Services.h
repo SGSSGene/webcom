@@ -3,12 +3,13 @@
 #include "Service.h"
 
 #include <fmt/format.h>
+#include <unordered_map>
 
 namespace webcom {
 
 class Services {
 private:
-    std::map<std::string, Service> serviceList;
+    std::unordered_map<std::string, Service> serviceList;
 public:
 
     template <typename CB>

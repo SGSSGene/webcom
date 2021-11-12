@@ -35,6 +35,6 @@ function initChat(adapter) {
 }
 
 window.onload = function() {
-    let ws = createWebSocket("ws");
-    let chat = initChat(ws.subscribe("chat"));
+    let webcom = connectWebcom("ws://" + window.location.host + "/ws");
+    let chat = initChat(webcom.subscribe("chat"));
 }

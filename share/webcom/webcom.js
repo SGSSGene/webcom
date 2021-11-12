@@ -1,11 +1,10 @@
-let createWebSocket = function(url) {
-    let path = "ws://" + window.location.host + "/" + url;
-    console.log("opening new ws " + path);
+let connectWebcom = function(url) {
+    console.log("opening new ws " + url);
 
     let rObj = {};
 
     rObj.id = 0;
-    rObj.ws = new WebSocket(path);
+    rObj.ws = new WebSocket(url);
     rObj.dispatcher = {};
     rObj.ws.binaryType = 'arraybuffer';
     rObj.isOpen = false;

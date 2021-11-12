@@ -39,34 +39,19 @@ struct ChatViewController : webcom::ViewController {
 
 
 int main(int argc, char const* const* argv) {
-    int const port = 9001;
 
-    fmt::print("open any of\n");
-    if (port != 80) {
-        fmt::print("  - {}\n", format(fg(fmt::color::green), "http://{}:{}/", "localhost", port));
-    } else {
-        fmt::print("  - {}\n", format(fg(fmt::color::green), "http://{}/", "localhost"));
-    }
-
-    // Some magic container providing the webserver
+    // Some magic container providing the web server
     auto webServices = webcom::WebServices{"../share/exampleWebcom/index.html", {{"/webcom/(.*)", "../share/webcom"}, {"/(.*)", "../share/exampleWebcom"}}};
 
     Chat chat;
-
     webServices.provideViewController("chat", [&]() {
         // create access, in theory we could do an access check here
         return webcom::make<ChatViewController>(chat);
     });
 
-    simplyfile::Epoll epoll;
-    auto& serverEpoll = webServices.listen(simplyfile::getHosts("0.0.0.0", std::to_string(port))).getEpoll();
-    epoll.addFD(serverEpoll, [&](int) {
-        serverEpoll.work();
-        epoll.modFD(serverEpoll, EPOLLIN | EPOLLONESHOT);
-    }, EPOLLIN | EPOLLONESHOT);
-
+    webServices.listen(simplyfile::getHosts("127.0.0.1", std::to_string(8080))).getEpoll();
     while(true) {
-        epoll.work();
+        webServices.epoll.work();
     }
 
 

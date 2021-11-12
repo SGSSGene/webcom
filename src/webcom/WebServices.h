@@ -23,14 +23,14 @@ struct WebSocketHandler : cndl::WebsocketHandler {
     using Request   = cndl::Request;
     std::unordered_map<Websocket*, UserData> cndlUserData;
     Services& services;
-    std::mutex& mutex;
-    WebSocketHandler(Services& _services, std::mutex& _mutex)
+    std::mutex mutex;
+
+    WebSocketHandler(Services& _services)
         : services {_services}
-        , mutex {_mutex}
     {}
 
     void onOpen([[maybe_unused]] Request const& request, Websocket& ws) {
-        auto g = std::lock_guard(mutex);
+        auto g = std::lock_guard{mutex};
         auto viewController = services.subscribe("services", [&ws](YAML::Node node) {
             YAML::Emitter emit;
             emit << node;
@@ -42,7 +42,7 @@ struct WebSocketHandler : cndl::WebsocketHandler {
     }
 
     void onMessage([[maybe_unused]] Websocket& ws, [[maybe_unused]] AnyMessage msg) override {
-        auto g = std::lock_guard(mutex);
+        auto g = std::lock_guard{mutex};
         auto& userData = cndlUserData[&ws];
         if (std::holds_alternative<std::string_view>(msg)) {
             auto const& message = std::get<std::string_view>(msg);
@@ -61,78 +61,25 @@ struct WebSocketHandler : cndl::WebsocketHandler {
 
 
     void onClose(Websocket& ws) override {
-        auto g = std::lock_guard(mutex);
+        auto g = std::lock_guard{mutex};
         fmt::print("close connection\n");
         cndlUserData.erase(&ws);
     }
 
 };
 
-auto serveFile(std::filesystem::path file) -> cndl::OptResponse {
-    auto ifs = std::ifstream(file.string(), std::ios::binary);
-    std::stringstream buffer;
-    buffer << ifs.rdbuf();
-
-    auto response = cndl::Response{buffer.str()};
-    if (file.extension() == ".css") {
-        response.fields.emplace("Content-Type", "text/css; charset=utf-8");
-        return response;
-    } else if (file.extension() == ".js") {
-        response.fields.emplace("Content-Type", "text/javascript; charset=utf-8");
-        return response;
-    } else if (file.extension() == ".png") {
-        response.fields.emplace("Content-Type", "image/png");
-        return response;
-    } else {
-        response.fields.emplace("Content-Type", "text/html; charset=utf-8");
-        return response;
-    }
-    std::cout << "not found " << file << "\n";
-    return std::nullopt;
-};
 
 struct WebServices : Services {
-    simplyfile::Epoll epoll;
-    cndl::Server cndlServer{epoll};
+    WebSocketHandler handler{*this};
+    cndl::WSRoute<WebSocketHandler> wsroute;
 
-    std::mutex mutex;
-
-    WebSocketHandler handler{*this, mutex};
-    cndl::WSRoute<WebSocketHandler> wsroute{std::regex{R"(/ws)"}, handler};
-
-    cndl::Route<cndl::OptResponse(cndl::Request const&)> defaultRoute;
-    using Route = cndl::Route<cndl::OptResponse(cndl::Request const&, std::string_view)>;
-    std::vector<Route> routes;
-
-    Service& userService;
-    WebServices(std::filesystem::path defaultFile, std::vector<std::tuple<std::string, std::filesystem::path>> paths)
-    : defaultRoute {std::regex{R"(/)"}, [=](cndl::Request const&) -> cndl::OptResponse {
-              return serveFile(defaultFile);
-         }, {.methods={"GET"}}}
-    , userService {provideViewController("services", [&]() {
-            return webcom::make<UserConnectionViewController>(*this);
-        })
-    }
+    WebServices(cndl::Server& _cndlServer, std::string const& _resource)
+        : wsroute   {std::regex{_resource}, handler}
     {
-
-        for (auto const& [url, path] : paths) {
-            routes.emplace_back(std::regex{url}, [path=path](cndl::Request const&, std::string_view arg) -> cndl::OptResponse {
-                fmt::print("serving: {}/{}\n", std::string{path},  arg);
-                return serveFile(path / std::string{arg});
-            }, Route::Options{.methods={"GET"}});
-        }
-
-        cndlServer.getDispatcher().addRoute(wsroute);
-        cndlServer.getDispatcher().addRoute(defaultRoute);
-        for (auto& r : routes) {
-            cndlServer.getDispatcher().addRoute(r);
-        }
-    }
-    auto listen(std::vector<simplyfile::Host> const& hosts) -> cndl::Server& {
-        for (auto const& h : hosts) {
-            cndlServer.listen(h);
-        }
-        return cndlServer;
+        provideViewController("services", [&]() {
+            return webcom::make<UserConnectionViewController>(*this);
+        });
+        _cndlServer.getDispatcher().addRoute(wsroute);
     }
 };
 

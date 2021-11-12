@@ -13,7 +13,7 @@ public:
 
     template <typename CB>
     auto provideViewController(std::string const& _key, CB cb) -> auto& {
-        auto [iter, succ] = serviceList.try_emplace(_key, _key, cb);
+        auto [iter, succ] = serviceList.try_emplace(_key, cb);
         return iter->second;
     }
 

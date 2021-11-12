@@ -38,16 +38,13 @@ struct Service {
 
     template <typename> friend struct FunctionSelector;
 private:
-    std::string                                       name;
     std::function<std::unique_ptr<ViewController>()>  objectCreate;
     Dispatcher                                        objectDispatch;
     std::unordered_set<ViewController*>               viewControllers;
 public:
 
     template <typename CB>
-    Service(std::string _name, CB cb)
-        : name {std::move(_name)}
-    {
+    Service(CB cb) {
         objectCreate = [cb]() -> std::unique_ptr<ViewController> {
             return cb();
         };
@@ -67,9 +64,6 @@ public:
         };
     }
 
-    auto getName() const -> std::string_view {
-        return name;
-    }
     auto getViewControllers() const -> std::unordered_set<ViewController*> const& {
         return viewControllers;
     }

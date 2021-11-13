@@ -19,7 +19,14 @@ struct ViewController {
     ViewController(ViewController const&) = delete;
     ViewController(ViewController&&) = delete;
 
-    virtual ~ViewController();
+    virtual ~ViewController() {
+        _dtor();
+    }
+    template <typename X = void>
+    void _dtor() {
+        service.removeViewController(*this);
+    }
+
 
     auto operator=(ViewController const&) -> ViewController = delete;
     auto operator=(ViewController&&) -> ViewController = delete;
@@ -56,19 +63,20 @@ struct ViewController {
         return Call{Call::Type::Others, *this, _actionName};
     }
 
-    void dispatchSignalFromClient(YAML::Node _node);
+    void dispatchSignalFromClient(YAML::Node _node) {
+        _dispatchSignalFromClient(_node);
+    }
+
+    template <typename X = void>
+    void _dispatchSignalFromClient(YAML::Node _node) {
+        service.dispatchSignalFromClient(*this, _node);
+    }
 };
 
 template <typename T, typename ...Args>
 static auto make(Args&&... args) {
     return std::make_unique<T>(std::forward<Args>(args)...);
 }
-
-}
-
-#include "Service.h"
-
-namespace webcom {
 
 namespace detail {
 template <typename ...Args>
@@ -84,14 +92,6 @@ auto convertToMessage(std::string_view _actionName, Args&&... _args) -> YAML::No
 
     return node;
 }
-}
-
-ViewController::~ViewController() {
-    service.removeViewController(*this);
-}
-
-void ViewController::dispatchSignalFromClient(YAML::Node _node) {
-    service.dispatchSignalFromClient(*this, _node);
 }
 
 template <typename ...Args>

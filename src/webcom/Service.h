@@ -44,38 +44,9 @@ protected:
     ControllerList activeViewControllers;
 
 public:
-/*    template <typename CB>
-    Service(CB cb) {
-        viewControllerFactory = std::move(cb);
-
-        viewControllerDispatcher = [](ViewController& viewController, YAML::Node msg) {
-            using TypedViewController = typename webcom::signature_t<CB>::return_t::element_type;
-            auto& typedViewController = dynamic_cast<TypedViewController&>(viewController);
-
-            auto selector = detail::FunctionSelector{msg["action"].as<std::string>(), [&](auto func) {
-                using Params = typename signature_t<std::decay_t<decltype(func)>>::params_t;
-                auto paramsAsTuple = fon::yaml::deserialize<Params>(msg["params"]);
-                std::apply([&](auto&&... params) {
-                    (typedViewController.*func)(std::forward<decltype(params)>(params)...);
-                }, paramsAsTuple);
-            }};
-            TypedViewController::reflect(selector);
-        };
-    }*/
-
     auto getViewControllers() const -> auto const& {
         return activeViewControllers;
     }
-
-/*    auto createViewController(std::function<void(YAML::Node)> _sendData) -> std::unique_ptr<ViewController> {
-        ViewController::gSendData = std::move(_sendData);
-        ViewController::gService = this;
-        auto viewController = viewControllerFactory();
-        auto ptr = viewController.get();
-        activeViewControllers.insert(viewController.get());
-
-        return viewController;
-    }*/
 
     void removeViewController(ViewController& viewController) {
         activeViewControllers.erase(&viewController);

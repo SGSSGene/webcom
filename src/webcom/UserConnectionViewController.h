@@ -8,12 +8,15 @@
 
 namespace webcom {
 
+template <typename T>
 struct UserConnectionViewController : ViewController {
-    Services& services;
+    Services<T>& services;
+    T userData;
     std::unordered_map<size_t, std::unique_ptr<ViewController>> viewControllers;
 
-    UserConnectionViewController(Services& _services)
+    UserConnectionViewController(Services<T>& _services, T _userData)
         : services{_services}
+        , userData{std::move(_userData)}
     {}
 
     static constexpr void reflect(auto& visitor) {
@@ -27,7 +30,7 @@ struct UserConnectionViewController : ViewController {
         viewControllers.try_emplace(_id, services.subscribe(std::move(_serviceName), [this, _id](YAML::Node _node) {
             _node["id"] = _id;
             callBack("message")(_node);
-        }));
+        }, userData));
     }
 
     void unsubscribe(size_t _id) {

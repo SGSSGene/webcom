@@ -100,10 +100,10 @@ int main(int argc, char const* const* argv) {
     Server server;
 
     // Some magic container providing the web server
-    auto cndlServices = webcom::CndlServices{server.cndlServer, "/ws"};
+    auto cndlServices = webcom::CndlServices<size_t>{server.cndlServer, "/ws"};
 
     Chat chat;
-    cndlServices.provideViewController("chat", [&]() {
+    cndlServices.provideViewController("chat", [&](size_t) {
         // create access, in theory we could do an access check here
         return webcom::make<ChatViewController>(chat);
     });

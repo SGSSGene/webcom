@@ -38,15 +38,15 @@ struct ChatViewController : webcom::ViewController {
 };
 
 int main(int argc, char const* const* argv) {
-    auto services = webcom::Services{};
+    auto services = webcom::Services<size_t>{};
 
     Chat chat;
 
-    auto& userService = services.provideViewController("services", [&]() {
+    auto& userService = services.provideViewController("services", [&](size_t userData) {
         // create access, in theory we could do an access check here
-        return webcom::make<webcom::UserConnectionViewController>(services);
+        return webcom::make<webcom::UserConnectionViewController<size_t>>(services, userData);
     });
-    auto& chatService = services.provideViewController("chat", [&]() {
+    auto& chatService = services.provideViewController("chat", [&](size_t) {
         return webcom::make<ChatViewController>(chat);
     });
 
@@ -81,7 +81,7 @@ int main(int argc, char const* const* argv) {
             throw std::runtime_error("unexpected message");
         }
         expectedMessagesToBeSend.erase(begin(expectedMessagesToBeSend));
-    });
+    }, 0);
 
     {
         auto msg = YAML::Node{};

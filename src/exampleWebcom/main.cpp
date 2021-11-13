@@ -1,7 +1,12 @@
 #include "Server.h"
 
+#include <webcom/widget/all.h>
+
 #include <fmt/color.h>
 #include <fmt/format.h>
+
+#include <thread>
+#include <chrono>
 
 /**
  * A very simple chat....it is just a list with a lock
@@ -46,6 +51,27 @@ int main(int argc, char const* const* argv) {
         // create access, in theory we could do an access check here
         return webcom::make<ChatViewController>(chat);
     });
+
+    auto readValue = webcom::widget::ReadValue<size_t>{};
+    auto& readValueService = cndlServices.provideViewController("readValue", [&](size_t) {
+        return webcom::make<webcom::widget::ReadValueViewController<size_t>>(readValue);
+    });
+    auto t = std::thread{[&]() {
+        size_t x = {0};
+        while(true) {
+            std::this_thread::sleep_for(std::chrono::milliseconds{100});
+            auto&& [g, value] = *readValue;
+            value = ++x;
+            readValueService.callAll("setValue")(value);
+        }
+    }};
+
+    auto readAndWriteValue = webcom::widget::ReadAndWriteValue<size_t>{};
+    auto& readAndWriteValueService = cndlServices.provideViewController("readAndWriteValue", [&](size_t) {
+        return webcom::make<webcom::widget::ReadAndWriteValueViewController<size_t>>(readAndWriteValue);
+    });
+
+
 
     server.run();
 }

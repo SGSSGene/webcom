@@ -34,7 +34,43 @@ function initChat(adapter) {
     return obj;
 }
 
+function connectReadValue(adapter) {
+    let tag  = document.getElementById("widget/readValue");
+
+    adapter.methods.init = function(value) {
+        tag.innerHTML = value;
+    }
+    adapter.methods.setValue = function(value) {
+        tag.innerHTML = value;
+    }
+}
+
+function connectReadAndWriteValue(adapter) {
+    let tagText  = document.getElementById("widget/readAndWriteValue/Text");
+    let tagInput  = document.getElementById("widget/readAndWriteValue/Input");
+
+    tagInput.onkeyup =  function(event) {
+        if (event.keyCode === 13) {
+            event.preventDefault();
+            adapter.call("setValue")(tagInput.value);
+            tagInput.value = "";
+        }
+    };
+
+    adapter.methods.init = function(value) {
+        tagText.innerHTML = value;
+    }
+    adapter.methods.setValue = function(value) {
+        tagText.innerHTML = value;
+    }
+}
+
+
+
 window.onload = function() {
     let webcom = connectWebcom("ws://" + window.location.host + "/ws");
+    connectReadValue(webcom.subscribe("readValue"));
+    connectReadAndWriteValue(webcom.subscribe("readAndWriteValue"));
+
     let chat = initChat(webcom.subscribe("chat"));
 }

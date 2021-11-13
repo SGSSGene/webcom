@@ -73,6 +73,7 @@ target_link_libraries(exampleWebcom
     yaml-cpp
     fmt
     crypto
+    pthread
 )
 
 add_executable(exampleWebcom2

@@ -95,7 +95,49 @@ public:
         return viewController;
     }
 
+    struct Call {
+        ServiceT const& service;
+        std::string_view actionName;
+
+        template <typename ...Args>
+        void operator()(Args&&... _args) const;
+    };
+
+
+    auto callAll(std::string_view _actionName) const {
+        return Call{*this, _actionName};
+    }
 };
 
+}
+
+#include "ViewController.h"
+
+namespace webcom {
+namespace detail2 {
+template <typename ...Args>
+auto to_yaml(Args&&...args) -> YAML::Node {
+    return fon::yaml::serialize<std::tuple<std::decay_t<Args>...>>(std::tuple{std::forward<Args>(args)...});
+}
+
+
+template <typename ...Args>
+auto convertToMessage(std::string_view _actionName, Args&&... _args) -> YAML::Node {
+    auto node = YAML::Node{};
+    node["action"]  = std::string{_actionName};
+    node["params"]  = to_yaml(std::forward<Args>(_args)...);
+
+    return node;
+}
+}
+
+template <typename T>
+template <typename ...Args>
+void ServiceT<T>::Call::operator()(Args&&... _args) const {
+    auto msg = detail2::convertToMessage(actionName, std::forward<Args>(_args)...);
+    for (auto& _viewController : service.getViewControllers()) {
+        _viewController->sendData(msg);
+    }
+}
 
 }

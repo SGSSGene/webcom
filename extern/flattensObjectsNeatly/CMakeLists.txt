@@ -1,18 +1,23 @@
 cmake_minimum_required(VERSION 3.12)
 
+set(ROOT_PROJECT OFF)
+
 # check if this is the main project
 if (NOT DEFINED PROJECT_NAME)
     set(CMAKE_CXX_STANDARD 20)
     set(CMAKE_CXX_STANDARD_REQUIRED True)
     set(CMAKE_CXX_EXTENSIONS False)
+    set(ROOT_PROJECT ON)
 endif ()
 
 project(fon)
 
-add_subdirectory(extern/Catch2)
+if (${ROOT_PROJECT})
+    add_subdirectory(extern/Catch2)
+endif()
 
-add_library(fon INTERFACE)
-target_include_directories(fon INTERFACE "src/")
+add_library(${PROJECT_NAME} INTERFACE)
+target_include_directories(${PROJECT_NAME} INTERFACE "src/")
 
 add_executable(testBinaryFon
     src/testBinaryFon/main.cpp

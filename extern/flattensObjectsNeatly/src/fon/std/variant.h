@@ -12,7 +12,7 @@ struct proxy<std::variant<Args...>> {
     static constexpr uint8_t Value = uint8_t{1};
 
     static constexpr void reflect(auto& visitor, auto& self) {
-        uint8_t index;
+        uint8_t index{};
         visitor[Index] % index;
         reflect_impl(visitor, self, index);
     }

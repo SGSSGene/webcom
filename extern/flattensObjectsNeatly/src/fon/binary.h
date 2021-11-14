@@ -109,7 +109,7 @@ auto deserialize(std::vector<std::byte> buffer) -> T {
         index += len;
     };
     auto cmpContigous = [&](auto begin, size_t len) {
-        if (index + len > buffer.size()) {
+        if (index + len > buffer.size() or len > std::numeric_limits<size_t>::max()/2) {
             throw std::runtime_error("error deserializing (corrupted)");
         }
 

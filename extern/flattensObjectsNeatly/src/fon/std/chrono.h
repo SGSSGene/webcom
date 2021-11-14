@@ -9,7 +9,7 @@ namespace fon {
 template <typename Clock, typename Duration>
 struct proxy<std::chrono::time_point<Clock, Duration>> {
     static constexpr void reflect(auto& visitor, auto& self) {
-        decltype(self.time_since_epoch().count()) val;
+        decltype(self.time_since_epoch().count()) val{};
         visitor % val;
         self = std::chrono::time_point<Clock, Duration>(Duration(val));
     }
@@ -23,7 +23,7 @@ struct proxy<std::chrono::time_point<Clock, Duration>> {
 template <typename Rep, typename Period>
 struct proxy<std::chrono::duration<Rep, Period>> {
     static constexpr void reflect(auto& visitor, auto& self) {
-        decltype(self.count()) val;
+        decltype(self.count()) val{};
         visitor % val;
         self = std::chrono::duration<Rep, Period>(val);
     }

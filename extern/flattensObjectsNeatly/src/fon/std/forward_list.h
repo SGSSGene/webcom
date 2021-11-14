@@ -24,7 +24,7 @@ struct proxy<std::forward_list<T, Args...>> {
         visitor % fon::List{[&]() { // init read
             // counts number of elements in std::forward_list (doesn't have size() method)
             size_t count{0};
-            for (auto s : self) {
+            for ([[maybe_unused]]auto s : self) {
                 count += 1;
             }
             return count;

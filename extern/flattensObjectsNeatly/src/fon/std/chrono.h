@@ -2,7 +2,7 @@
 
 #include <chrono>
 
-#include "proxy.h"
+#include "../proxy.h"
 
 namespace fon {
 

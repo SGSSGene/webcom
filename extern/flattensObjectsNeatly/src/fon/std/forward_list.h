@@ -1,5 +1,7 @@
 #pragma once
 
+#include "../proxy.h"
+
 #include <forward_list>
 
 namespace fon {

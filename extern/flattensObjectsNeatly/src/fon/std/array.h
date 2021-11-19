@@ -2,7 +2,7 @@
 
 #include <array>
 
-#include "proxy.h"
+#include "../proxy.h"
 
 namespace fon {
 

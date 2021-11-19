@@ -1,9 +1,9 @@
 #pragma once
 
+#include "../proxy.h"
+
 #include <filesystem>
 #include <string>
-
-#include "proxy.h"
 
 namespace fon {
 

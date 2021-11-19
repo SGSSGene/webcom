@@ -2,7 +2,7 @@
 
 #include <deque>
 
-#include "proxy.h"
+#include "../proxy.h"
 
 namespace fon {
 

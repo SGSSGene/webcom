@@ -7,7 +7,6 @@
 
 #include <cassert>
 #include <cstring>
-#include <tuple>
 
 namespace fon::binary {
 
@@ -122,7 +121,7 @@ auto deserialize(std::vector<std::byte> buffer) -> T {
     auto res = getEmpty<T>();
 
     std::vector<std::function<void()>> fixPointers;
-    visit([&]<typename Visitor, typename ValueT>(Visitor& visitor, ValueT& obj) {
+    fon::visit([&]<typename Visitor, typename ValueT>(Visitor& visitor, ValueT& obj) {
         if constexpr (std::is_arithmetic_v<ValueT>) {
             readValue(obj);
         } else if constexpr (std::is_same_v<std::string, ValueT>) {

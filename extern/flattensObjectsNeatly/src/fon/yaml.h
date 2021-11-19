@@ -6,7 +6,6 @@
 #include "utils.h"
 
 #include <cassert>
-#include <tuple>
 #include <yaml-cpp/yaml.h>
 
 namespace fon::yaml {
@@ -125,7 +124,7 @@ auto deserialize(YAML::Node root) -> T {
     std::vector<YAML::Node> nodeStack{root};
 
     std::vector<std::function<void()>> fixPointers;
-    visit([&]<typename Visitor, typename ValueT>(Visitor& visitor, ValueT& obj) {
+    fon::visit([&]<typename Visitor, typename ValueT>(Visitor& visitor, ValueT& obj) {
         auto top = nodeStack.back();
 
         if (not top.IsDefined()) {

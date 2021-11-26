@@ -69,12 +69,8 @@ struct View : ViewBase {
     void dispatchSignalFromClient(YAML::Node _node) override {
         controller.dispatchSignalFromClient(*this, _node);
     }
-};
 
-template <typename T, typename ...Args>
-static auto make(Args&&... args) {
-    return std::make_unique<T>(std::forward<Args>(args)...);
-}
+};
 
 namespace detail {
 template <typename ...Args>

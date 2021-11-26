@@ -22,10 +22,10 @@ struct WebSocketHandler : cndl::WebsocketHandler {
     using Websocket = cndl::Websocket;
     using Request   = cndl::Request;
     std::unordered_map<Websocket*, UserData> cndlUserData;
-    Services<size_t>& services;
+    Services& services;
     std::mutex mutex;
 
-    WebSocketHandler(Services<size_t>& _services)
+    WebSocketHandler(Services& _services)
         : services {_services}
     {}
 
@@ -36,7 +36,7 @@ struct WebSocketHandler : cndl::WebsocketHandler {
             emit << node;
 
             ws.send(std::string{emit.c_str()});
-        }, 0);
+        });
         cndlUserData.try_emplace(&ws, std::move(view));
         fmt::print("new connection\n");
     }
@@ -69,24 +69,22 @@ struct WebSocketHandler : cndl::WebsocketHandler {
 };
 
 
-template <typename T>
-struct CndlServices : Services<T> {
+struct CndlServices : Services {
     WebSocketHandler handler{*this};
     cndl::WSRoute<WebSocketHandler> wsroute;
 
     CndlServices(cndl::Server& _cndlServer, std::string const& _resource)
         : wsroute   {std::regex{_resource}, handler}
     {
-        makeController("services", [&](T userData) {
-            return webcom::make<UserConnectionView<T>>(*this, std::move(userData));
+        makeController("services", [&]() {
+            return webcom::make<UserConnectionView>(*this);
         });
         _cndlServer.getDispatcher().addRoute(wsroute);
     }
 
-    using Services<T>::makeController;
+    using Services::makeController;
 };
 
 }
-template <typename T>
-using CndlServices = details::CndlServices<T>;
+using CndlServices = details::CndlServices;
 }

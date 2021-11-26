@@ -44,16 +44,16 @@ int main(int argc, char const* const* argv) {
     Server server;
 
     // Some magic container providing the web server
-    auto cndlServices = webcom::CndlServices<size_t>{server.cndlServer, "/ws"};
+    auto cndlServices = webcom::CndlServices{server.cndlServer, "/ws"};
 
     Chat chat;
-    cndlServices.makeController("chat", [&](size_t) {
+    cndlServices.makeController("chat", [&]() {
         // create access, in theory we could do an access check here
         return webcom::make<ChatView>(chat);
     });
 
     auto readValue = webcom::widget::ReadValue<size_t>{};
-    auto& readValueController = cndlServices.makeController("readValue", [&](size_t) {
+    auto& readValueController = cndlServices.makeController("readValue", [&]() {
         return webcom::make<webcom::widget::ReadValueView<size_t>>(readValue);
     });
     auto t = std::thread{[&]() {
@@ -67,7 +67,7 @@ int main(int argc, char const* const* argv) {
     }};
 
     auto readAndWriteValue = webcom::widget::ReadAndWriteValue<size_t>{};
-    auto& readAndWriteValueController = cndlServices.makeController("readAndWriteValue", [&](size_t) {
+    auto& readAndWriteValueController = cndlServices.makeController("readAndWriteValue", [&]() {
         return webcom::make<webcom::widget::ReadAndWriteValueView<size_t>>(readAndWriteValue);
     });
 

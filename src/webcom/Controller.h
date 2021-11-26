@@ -57,10 +57,9 @@ public:
     }
 };
 
-template <typename T>
 struct Controller : ControllerBase {
 private:
-    using Factory = std::function<std::unique_ptr<View>(T)>;
+    using Factory = std::function<std::unique_ptr<View>()>;
 
     Factory viewFactory;
 
@@ -83,7 +82,7 @@ public:
             TypedView::reflect(selector);
         };
     }
-    auto createView(std::function<void(YAML::Node)> _sendData, T _userData) -> std::unique_ptr<View>;
+    auto createView(std::function<void(YAML::Node)> _sendData) -> std::unique_ptr<View>;
 
     struct Call {
         Controller const& service;
@@ -121,20 +120,18 @@ auto convertToMessage(std::string_view _actionName, Args&&... _args) -> YAML::No
 }
 }
 
-template <typename T>
 template <typename ...Args>
-void Controller<T>::Call::operator()(Args&&... _args) const {
+inline void Controller::Call::operator()(Args&&... _args) const {
     auto msg = detail2::convertToMessage(actionName, std::forward<Args>(_args)...);
     for (auto& _view : service.getViews()) {
         _view->sendData(msg);
     }
 }
 
-template <typename T>
-auto Controller<T>::createView(std::function<void(YAML::Node)> _sendData, T _userData) -> std::unique_ptr<View> {
+inline auto Controller::createView(std::function<void(YAML::Node)> _sendData) -> std::unique_ptr<View> {
     View::gSendData   = std::move(_sendData);
     View::gController = this;
-    auto view = viewFactory(std::move(_userData));
+    auto view = viewFactory();
     auto ptr = view.get();
     activeViews.insert(view.get());
 

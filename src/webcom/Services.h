@@ -9,10 +9,9 @@
 
 namespace webcom {
 
-template <typename T>
 class Services {
 private:
-    GuardedType<std::unordered_map<std::string, Controller<T>>> controllerList;
+    GuardedType<std::unordered_map<std::string, Controller>> controllerList;
 public:
 
     template <typename CB>
@@ -23,14 +22,14 @@ public:
         return iter->second;
     }
 
-    auto subscribe(std::string_view _serviceName, std::function<void(YAML::Node)> _send, T t) -> std::unique_ptr<View> {
+    auto subscribe(std::string_view _serviceName, std::function<void(YAML::Node)> _send) -> std::unique_ptr<View> {
         auto&& [guard, list] = *controllerList;
 
         auto iter = list.find(std::string{_serviceName}); //!TODO how to make it work with std::string_view
         if (iter == end(list)) {
             throw std::runtime_error(fmt::format("unknown service \"{}\"", _serviceName));
         }
-        return iter->second.createView(std::move(_send), std::move(t));
+        return iter->second.createView(std::move(_send));
     }
 };
 

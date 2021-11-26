@@ -37,11 +37,11 @@ struct View;
 
 struct Service {
 protected:
-    using Dispatcher     = std::function<void(View&, YAML::Node)>;
-    using ControllerList = std::unordered_set<View*>;
+    using Dispatcher = std::function<void(View&, YAML::Node)>;
+    using ViewList   = std::unordered_set<View*>;
 
     Dispatcher     viewDispatcher;
-    ControllerList activeViews;
+    ViewList       activeViews;
 
 public:
     auto getViews() const -> auto const& {

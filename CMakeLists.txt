@@ -53,6 +53,8 @@ if (${ROOT_PROJECT})
 
     add_subdirectory(extern/fmt)
     add_subdirectory(extern/flattensObjectsNeatly)
+    add_subdirectory(extern/flattensObjectsNeatly/extern/Catch2)
+
 endif()
 
 # Executable PROJECT_NAME

@@ -31,9 +31,6 @@ struct FunctionSelector {
 template <typename CB>
 FunctionSelector(std::string_view, CB) -> FunctionSelector<CB>;
 
-}
-
-namespace detail2 {
 template <typename ...Args>
 auto to_yaml(Args&&...args) -> YAML::Node {
     return fon::yaml::serialize<std::tuple<std::decay_t<Args>...>>(std::tuple{std::forward<Args>(args)...});
@@ -100,13 +97,13 @@ public:
     }
 
     struct Call {
-        Controller const& service;
+        Controller const& controller;
         std::string_view actionName;
 
         template <typename ...Args>
         void operator()(Args&&... _args) const {
-            auto msg = detail2::convertToMessage(actionName, std::forward<Args>(_args)...);
-            for (auto& _view : service.getViews()) {
+            auto msg = detail::convertToMessage(actionName, std::forward<Args>(_args)...);
+            for (auto& _view : controller.getViews()) {
                 _view->sendData(msg);
             }
         }

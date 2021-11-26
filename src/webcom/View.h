@@ -1,11 +1,10 @@
 #pragma once
 
+#include "Controller.h"
+
 #include <any>
 
 namespace webcom {
-
-template <typename T>
-struct Controller;
 
 struct ViewBase {
     using SendData = std::function<void(YAML::Node)>;
@@ -41,7 +40,22 @@ struct View : ViewBase {
         std::string_view actionName;
 
         template <typename ...Args>
-        void operator()(Args&&... _args) const;
+        void operator()(Args&&... _args) const {
+            auto msg = detail::convertToMessage(actionName, std::forward<Args>(_args)...);
+            if (type == Type::All) {
+                for (auto& _view : view.controller.getViews()) {
+                    _view->sendData(msg);
+                }
+            } else if (type == Type::Back) {
+                view.sendData(msg);
+            } else if (type == Type::Others) {
+                for (auto& _view : view.controller.getViews()) {
+                    if (_view != &view) {
+                        _view->sendData(msg);
+                    }
+                }
+            }
+        }
     };
 
     /**
@@ -71,40 +85,4 @@ struct View : ViewBase {
     }
 
 };
-
-namespace detail {
-template <typename ...Args>
-auto to_yaml(Args&&...args) -> YAML::Node {
-    return fon::yaml::serialize<std::tuple<std::decay_t<Args>...>>(std::tuple{std::forward<Args>(args)...});
-}
-
-template <typename ...Args>
-auto convertToMessage(std::string_view _actionName, Args&&... _args) -> YAML::Node {
-    auto node = YAML::Node{};
-    node["action"]  = std::string{_actionName};
-    node["params"]  = to_yaml(std::forward<Args>(_args)...);
-
-    return node;
-}
-}
-
-template <typename T>
-template <typename ...Args>
-void View<T>::Call::operator()(Args&&... _args) const {
-    auto msg = detail::convertToMessage(actionName, std::forward<Args>(_args)...);
-    if (type == Type::All) {
-        for (auto& _view : view.controller.getViews()) {
-            _view->sendData(msg);
-        }
-    } else if (type == Type::Back) {
-        view.sendData(msg);
-    } else if (type == Type::Others) {
-        for (auto& _view : view.controller.getViews()) {
-            if (_view != &view) {
-                _view->sendData(msg);
-            }
-        }
-    }
-}
-
 }

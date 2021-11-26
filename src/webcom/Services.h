@@ -12,7 +12,7 @@ namespace webcom {
 template <typename T>
 class Services {
 private:
-    GuardedType<std::unordered_map<std::string, ControllerT<T>>> controllerList;
+    GuardedType<std::unordered_map<std::string, Controller<T>>> controllerList;
 public:
 
     template <typename CB>

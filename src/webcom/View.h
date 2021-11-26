@@ -4,16 +4,16 @@
 
 namespace webcom {
 
-struct Controller;
+struct ControllerBase;
 
 struct View {
     using SendData = std::function<void(YAML::Node)>;
     using GetSize  = std::function<size_t()>;
 
-    thread_local static inline SendData    gSendData;
-    thread_local static inline Controller* gController{};
+    thread_local static inline SendData        gSendData;
+    thread_local static inline ControllerBase* gController{};
     SendData sendData{std::move(gSendData)};
-    Controller& controller{*gController};
+    ControllerBase& controller{*gController};
 
     View() = default;
     View(View const&) = delete;

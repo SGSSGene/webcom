@@ -51,6 +51,24 @@ target_link_libraries(testYAMLFon
     yaml-cpp
 )
 
+add_executable(testJSONFon
+    src/testJSONFon/main.cpp
+    src/testJSONFon/testBool.cpp
+    src/testJSONFon/testClasses.cpp
+    src/testJSONFon/testContainer.cpp
+    src/testJSONFon/testEnum.cpp
+    src/testJSONFon/testFloats.cpp
+    src/testJSONFon/testInts.cpp
+    src/testJSONFon/testPointers.cpp
+    src/testJSONFon/testJSON.cpp
+)
+target_link_libraries(testJSONFon
+    fon
+    Catch2
+    jsoncpp
+)
+
+
 add_executable(exampleFon
     src/exampleFon/main.cpp
 )

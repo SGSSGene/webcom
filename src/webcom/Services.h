@@ -11,21 +11,13 @@ namespace webcom {
 
 class Services {
 public:
-//    GuardedType<std::unordered_map<std::string, Controller>> controllerList;
     using SendCB = std::function<void(YAML::Node)>;
     using CB     = std::function<std::unique_ptr<ViewBase>(SendCB)>;
 
 private:
     GuardedType<std::unordered_map<std::string, CB>> controllerList;
+
 public:
-
-/*    template <typename CB>
-    auto makeController(std::string const& _key, CB cb) -> auto& {
-        auto&& [guard, list] = *controllerList;
-
-        auto [iter, succ] = list.try_emplace(_key, cb);
-        return iter->second;
-    }*/
     void addController(std::string_view _key, CB _cb) {
         auto&& [guard, list] = *controllerList;
         list.try_emplace(std::string{_key}, _cb);

@@ -11,7 +11,7 @@
 
 namespace fon::json {
 
-namespace details {
+namespace detail {
 
 struct Pointer {
     virtual ~Pointer() {}
@@ -20,6 +20,23 @@ template <typename T>
 struct PointerT : Pointer {
     T const* ptr;
 };
+
+template <typename Key>
+auto to_json_key(Key const& key) -> std::string {
+    if constexpr (std::is_same_v<Key, std::string>
+                or std::is_same_v<Key, std::string_view>
+                or std::is_same_v<Key, char const*>) {
+        return key;
+    } else if constexpr (std::is_arithmetic_v<Key>) {
+        return std::to_string(key);
+    } else {
+        []<bool flag = false>() {
+            static_assert(flag, "unknow type for key");
+        }();
+    }
+    return "";
+}
+
 
 template <typename T>
 auto serialize(T const& _input, Json::Value start = {}) -> Json::Value {
@@ -53,12 +70,14 @@ auto serialize(T const& _input, Json::Value start = {}) -> Json::Value {
             top = std::string{obj};
         } else if constexpr (fon::has_list_adapter_v<ValueT>) {
             auto adapter = fon::list_adapter{obj};
+            top = Json::arrayValue;
             adapter.visit([&](size_t key, auto& value) {
                 auto right = stackVisit(value);
                 top.append(right);
             });
         } else if constexpr (fon::has_map_adapter_v<ValueT>) {
             auto adapter = fon::map_adapter{obj};
+            top = Json::objectValue;
             adapter.visit([&](auto& key, auto& value) {
                 auto left  = stackVisit(key);
                 auto right = stackVisit(value);
@@ -66,10 +85,10 @@ auto serialize(T const& _input, Json::Value start = {}) -> Json::Value {
             });
         } else if constexpr (fon::has_struct_adapter_v<ValueT>) {
             auto adapter = fon::struct_adapter{obj};
+            top = Json::objectValue;
             adapter.visit([&](auto& key, auto& value) {
-                auto left  = stackVisit(key);
                 auto right = stackVisit(value);
-                top[left.asString()] = right;
+                top[to_json_key(key)] = right;
             }, [&](auto& value) {
                 top = stackVisit(value);
             });
@@ -186,22 +205,7 @@ auto deserialize(Json::Value root) -> T {
             } else if constexpr (fon::has_struct_adapter_v<ValueT>) {
                 auto adapter = fon::struct_adapter{obj};
                 adapter.visit([&](auto& key, auto& value) {
-                    auto str_key = [&]() -> std::string {
-                        using Key = std::decay_t<decltype(key)>;
-                        if constexpr (std::is_same_v<Key, std::string>
-                                    or std::is_same_v<Key, std::string_view>
-                                    or std::is_same_v<Key, char const*>) {
-                            return key;
-                        } else if constexpr (std::is_arithmetic_v<Key>) {
-                            return std::to_string(key);
-                        } else {
-                            []<bool flag = false>() {
-                                static_assert(flag, "unknow type for key");
-                            }();
-                        }
-                        return "";
-                    }();
-                    auto g = StackGuard{nodeStack, top[str_key]};
+                   auto g = StackGuard{nodeStack, top[to_json_key(key)]};
                     visitor % value;
                 }, [&](auto& value) {
                     visitor % value;
@@ -243,7 +247,7 @@ auto deserialize(Json::Value root) -> T {
 
 }
 
-using details::serialize;
-using details::deserialize;
+using detail::serialize;
+using detail::deserialize;
 
 }

@@ -16,7 +16,7 @@ private:
 public:
 
     template <typename CB>
-    auto provideView(std::string const& _key, CB cb) -> auto& {
+    auto makeController(std::string const& _key, CB cb) -> auto& {
         auto&& [guard, list] = *controllerList;
 
         auto [iter, succ] = list.try_emplace(_key, cb);

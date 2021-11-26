@@ -42,11 +42,11 @@ int main(int argc, char const* const* argv) {
 
     Chat chat;
 
-    auto& userService = services.provideView("services", [&](size_t userData) {
+    auto& userController = services.makeController("services", [&](size_t userData) {
         // create access, in theory we could do an access check here
         return webcom::make<webcom::UserConnectionView<size_t>>(services, userData);
     });
-    auto& chatService = services.provideView("chat", [&](size_t) {
+    auto& chatController = services.makeController("chat", [&](size_t) {
         return webcom::make<ChatView>(chat);
     });
 
@@ -66,7 +66,7 @@ int main(int argc, char const* const* argv) {
         "      0: uiae\n"
         "    id: 0",
     };
-    auto uv = userService.createView([&](YAML::Node node) {
+    auto uv = userController.createView([&](YAML::Node node) {
         YAML::Emitter emit;
         emit << node;
         auto actual = std::string{emit.c_str()};
@@ -105,36 +105,3 @@ int main(int argc, char const* const* argv) {
         throw std::runtime_error("didn't send all expected messages");
     }
 }
-
-
-/*int main(int argc, char const* const* argv) {
-    Chat chat;
-
-    auto chatService = webcom::Service("chat", [&]() {
-        // create access, in theory we could do an access check here
-        return webcom::make<ChatView>(chat);
-    });
-
-    auto vc = chatService.createView([](std::string_view data) {
-        fmt::print("sending data:\n{}\n---\n\n", data);
-    });
-
-    {
-        auto msg = YAML::Node{};
-        msg["action"] = "addText";
-        msg["params"].push_back("test");
-        vc->dispatchSignalFromClient(msg);
-    }
-
-    {
-        auto msg = YAML::Node{};
-        msg["action"] = "addText";
-        msg["params"].push_back("secnd entry");
-        vc->dispatchSignalFromClient(msg);
-    }
-    {
-       auto vc = chatService.createView([](std::string_view data) {
-            fmt::print("second user:\n{}\n---\n\n", data);
-        });
-    }
-}*/

@@ -47,13 +47,13 @@ int main(int argc, char const* const* argv) {
     auto cndlServices = webcom::CndlServices<size_t>{server.cndlServer, "/ws"};
 
     Chat chat;
-    cndlServices.provideView("chat", [&](size_t) {
+    cndlServices.makeController("chat", [&](size_t) {
         // create access, in theory we could do an access check here
         return webcom::make<ChatView>(chat);
     });
 
     auto readValue = webcom::widget::ReadValue<size_t>{};
-    auto& readValueService = cndlServices.provideView("readValue", [&](size_t) {
+    auto& readValueController = cndlServices.makeController("readValue", [&](size_t) {
         return webcom::make<webcom::widget::ReadValueView<size_t>>(readValue);
     });
     auto t = std::thread{[&]() {
@@ -62,12 +62,12 @@ int main(int argc, char const* const* argv) {
             std::this_thread::sleep_for(std::chrono::milliseconds{100});
             auto&& [g, value] = *readValue;
             value = ++x;
-            readValueService.callAll("setValue")(value);
+            readValueController.callAll("setValue")(value);
         }
     }};
 
     auto readAndWriteValue = webcom::widget::ReadAndWriteValue<size_t>{};
-    auto& readAndWriteValueService = cndlServices.provideView("readAndWriteValue", [&](size_t) {
+    auto& readAndWriteValueController = cndlServices.makeController("readAndWriteValue", [&](size_t) {
         return webcom::make<webcom::widget::ReadAndWriteValueView<size_t>>(readAndWriteValue);
     });
 

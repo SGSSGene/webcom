@@ -77,13 +77,13 @@ struct CndlServices : Services<T> {
     CndlServices(cndl::Server& _cndlServer, std::string const& _resource)
         : wsroute   {std::regex{_resource}, handler}
     {
-        provideView("services", [&](T userData) {
+        makeController("services", [&](T userData) {
             return webcom::make<UserConnectionView<T>>(*this, std::move(userData));
         });
         _cndlServer.getDispatcher().addRoute(wsroute);
     }
 
-    using Services<T>::provideView;
+    using Services<T>::makeController;
 };
 
 }

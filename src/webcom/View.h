@@ -28,13 +28,8 @@ struct View : ViewBase {
     View(View&&) = delete;
 
     virtual ~View() {
-        _dtor();
-    }
-    template <typename X = void>
-    void _dtor() {
         controller.removeView(*this);
     }
-
 
     auto operator=(View const&) -> View = delete;
     auto operator=(View&&) -> View = delete;
@@ -72,11 +67,6 @@ struct View : ViewBase {
     }
 
     void dispatchSignalFromClient(YAML::Node _node) override {
-        _dispatchSignalFromClient(_node);
-    }
-
-    template <typename X = void>
-    void _dispatchSignalFromClient(YAML::Node _node) {
         controller.dispatchSignalFromClient(*this, _node);
     }
 };

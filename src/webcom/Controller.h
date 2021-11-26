@@ -33,6 +33,23 @@ FunctionSelector(std::string_view, CB) -> FunctionSelector<CB>;
 
 }
 
+namespace detail2 {
+template <typename ...Args>
+auto to_yaml(Args&&...args) -> YAML::Node {
+    return fon::yaml::serialize<std::tuple<std::decay_t<Args>...>>(std::tuple{std::forward<Args>(args)...});
+}
+
+template <typename ...Args>
+auto convertToMessage(std::string_view _actionName, Args&&... _args) -> YAML::Node {
+    auto node = YAML::Node{};
+    node["action"]  = std::string{_actionName};
+    node["params"]  = to_yaml(std::forward<Args>(_args)...);
+
+    return node;
+}
+}
+
+
 template <typename T>
 struct View;
 
@@ -72,14 +89,27 @@ private:
 public:
 
     template <typename ...Args>
-    auto makeView(std::function<void(YAML::Node)> _sendData, Args&&... args) -> std::unique_ptr<T>;
+    auto makeView(std::function<void(YAML::Node)> _sendData, Args&&... args) -> std::unique_ptr<T> {
+        View<T>::gSendData  = std::move(_sendData);
+        View<T>::gController = this;
+        auto view = std::make_unique<T>(std::forward<Args>(args)...);
+        auto ptr = view.get();
+        activeViews.insert(view.get());
+
+        return view;
+    }
 
     struct Call {
         Controller const& service;
         std::string_view actionName;
 
         template <typename ...Args>
-        void operator()(Args&&... _args) const;
+        void operator()(Args&&... _args) const {
+            auto msg = detail2::convertToMessage(actionName, std::forward<Args>(_args)...);
+            for (auto& _view : service.getViews()) {
+                _view->sendData(msg);
+            }
+        }
     };
 
 
@@ -87,48 +117,5 @@ public:
         return Call{*this, _actionName};
     }
 };
-
-}
-
-#include "View.h"
-
-namespace webcom {
-namespace detail2 {
-template <typename ...Args>
-auto to_yaml(Args&&...args) -> YAML::Node {
-    return fon::yaml::serialize<std::tuple<std::decay_t<Args>...>>(std::tuple{std::forward<Args>(args)...});
-}
-
-template <typename ...Args>
-auto convertToMessage(std::string_view _actionName, Args&&... _args) -> YAML::Node {
-    auto node = YAML::Node{};
-    node["action"]  = std::string{_actionName};
-    node["params"]  = to_yaml(std::forward<Args>(_args)...);
-
-    return node;
-}
-}
-
-template <typename T>
-template <typename ...Args>
-inline void Controller<T>::Call::operator()(Args&&... _args) const {
-    auto msg = detail2::convertToMessage(actionName, std::forward<Args>(_args)...);
-    for (auto& _view : service.getViews()) {
-        _view->sendData(msg);
-    }
-}
-
-template <typename T>
-template <typename ...Args>
-inline auto Controller<T>::makeView(std::function<void(YAML::Node)> _sendData, Args&&... args) -> std::unique_ptr<T> {
-    View<T>::gSendData  = std::move(_sendData);
-    View<T>::gController = this;
-    auto view = std::make_unique<T>(std::forward<Args>(args)...);
-    auto ptr = view.get();
-    activeViews.insert(view.get());
-
-    return view;
-}
-
 
 }

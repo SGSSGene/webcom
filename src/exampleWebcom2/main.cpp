@@ -14,7 +14,7 @@ using Chat = webcom::GuardedType<std::vector<std::string>>;
  *
  * Each user (connection via websocket) will have its own view
  */
-struct ChatView : webcom::View<int> {
+struct ChatView : webcom::View<ChatView> {
     Chat& chat;
 
     ChatView(Chat& _chat)
@@ -42,25 +42,12 @@ int main(int argc, char const* const* argv) {
 
     Chat chat;
 
-    auto userController = webcom::Controller{[&]() {
-        // create access, in theory we could do an access check here
-        return webcom::make<webcom::UserConnectionView>(services);
-    }};
-    auto chatController = webcom::Controller{[&]() {
-        return webcom::make<ChatView>(chat);
-    }};
+    auto userController = webcom::Controller<webcom::UserConnectionView>{};
+    auto chatController = webcom::Controller<ChatView>{};
 
-/*    auto& userController = services.makeController("services", [&]() {
-        // create access, in theory we could do an access check here
-        return webcom::make<webcom::UserConnectionView>(services);
+    services.addController("chat", [&](webcom::Services::SendCB _send) {
+        return chatController.makeView(std::move(_send), chat);
     });
-    auto& chatController = services.makeController("chat", [&]() {
-        return webcom::make<ChatView>(chat);
-    });*/
-
-    services.addController("services", userController);
-    services.addController("chat", chatController);
-
 
     auto expectedMessagesToBeSend = std::vector<std::string>{
         "action: message\n"
@@ -78,7 +65,7 @@ int main(int argc, char const* const* argv) {
         "      0: uiae\n"
         "    id: 0",
     };
-    auto uv = userController.createView([&](YAML::Node node) {
+    auto uv = userController.makeView([&](YAML::Node node) {
         YAML::Emitter emit;
         emit << node;
         auto actual = std::string{emit.c_str()};
@@ -93,7 +80,7 @@ int main(int argc, char const* const* argv) {
             throw std::runtime_error("unexpected message");
         }
         expectedMessagesToBeSend.erase(begin(expectedMessagesToBeSend));
-    });
+    }, services);
 
     {
         auto msg = YAML::Node{};

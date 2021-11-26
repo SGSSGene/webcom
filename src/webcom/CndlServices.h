@@ -72,17 +72,18 @@ struct WebSocketHandler : cndl::WebsocketHandler {
 struct CndlServices : Services {
     WebSocketHandler handler{*this};
     cndl::WSRoute<WebSocketHandler> wsroute;
+    webcom::Controller<webcom::UserConnectionView> userController;
+
 
     CndlServices(cndl::Server& _cndlServer, std::string const& _resource)
         : wsroute   {std::regex{_resource}, handler}
     {
-        /*makeController("services", [&]() {
-            return webcom::make<UserConnectionView>(*this);
-        });*/
+        addController("services", [&](webcom::Services::SendCB _send) {
+           return userController.makeView(std::move(_send), *this);
+        });
+
         _cndlServer.getDispatcher().addRoute(wsroute);
     }
-
-//    using Services::makeController;
 };
 
 }

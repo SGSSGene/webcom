@@ -17,7 +17,7 @@ using Chat = webcom::GuardedType<std::vector<std::string>>;
  *
  * Each user (connection via websocket) will have its own view
  */
-struct ChatView : webcom::View<int> {
+struct ChatView : webcom::View<ChatView> {
     Chat& chat;
 
     ChatView(Chat& _chat)
@@ -47,15 +47,24 @@ int main(int argc, char const* const* argv) {
     auto cndlServices = webcom::CndlServices{server.cndlServer, "/ws"};
 
     Chat chat;
-    cndlServices.makeController("chat", [&]() {
+    auto chatController = webcom::Controller<ChatView>{};
+    cndlServices.addController("chat", [&](webcom::Services::SendCB _send) {
         // create access, in theory we could do an access check here
-        return webcom::make<ChatView>(chat);
+        return chatController.makeView(std::move(_send), chat);
     });
 
     auto readValue = webcom::widget::ReadValue<size_t>{};
-    auto& readValueController = cndlServices.makeController("readValue", [&]() {
-        return webcom::make<webcom::widget::ReadValueView<size_t>>(readValue);
+    auto readValueController = webcom::Controller<webcom::widget::ReadValueView<size_t>>{};
+    cndlServices.addController("readValue", [&](webcom::Services::SendCB _send) {
+        return readValueController.makeView(std::move(_send), readValue);
     });
+
+    auto readAndWriteValue = webcom::widget::ReadAndWriteValue<size_t>{};
+    auto readAndWriteValueController = webcom::Controller<webcom::widget::ReadAndWriteValueView<size_t>>{};
+    cndlServices.addController("readAndWriteValue", [&](webcom::Services::SendCB _send) {
+        return readAndWriteValueController.makeView(std::move(_send), readAndWriteValue);
+    });
+
     auto t = std::thread{[&]() {
         size_t x = {0};
         while(true) {
@@ -65,12 +74,6 @@ int main(int argc, char const* const* argv) {
             readValueController.callAll("setValue")(value);
         }
     }};
-
-    auto readAndWriteValue = webcom::widget::ReadAndWriteValue<size_t>{};
-    auto& readAndWriteValueController = cndlServices.makeController("readAndWriteValue", [&]() {
-        return webcom::make<webcom::widget::ReadAndWriteValueView<size_t>>(readAndWriteValue);
-    });
-
 
 
     server.run();

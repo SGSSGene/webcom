@@ -10,7 +10,7 @@ template <typename T>
 using ReadValue = webcom::GuardedType<T>;
 
 template <typename T>
-struct ReadValueView : webcom::View<ReadValueView> {
+struct ReadValueView : webcom::View<ReadValueView<T>> {
     ReadValue<T>& entity;
 
     ReadValueView(ReadValue<T>& _entity)
@@ -18,7 +18,7 @@ struct ReadValueView : webcom::View<ReadValueView> {
     {
         auto&& [g, value] = *entity;
         // call 'init' of this client only
-        callBack("init")(value);
+        this->callBack("init")(value);
     }
 
     static constexpr void reflect(auto& visitor) {}

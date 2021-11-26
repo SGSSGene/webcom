@@ -10,7 +10,7 @@ template <typename T>
 using ReadAndWriteValue = webcom::GuardedType<T>;
 
 template <typename T>
-struct ReadAndWriteValueView : webcom::View<ReadAndWriteValueView> {
+struct ReadAndWriteValueView : webcom::View<ReadAndWriteValueView<T>> {
     ReadAndWriteValue<T>& entity;
 
     ReadAndWriteValueView(ReadAndWriteValue<T>& _entity)
@@ -18,7 +18,7 @@ struct ReadAndWriteValueView : webcom::View<ReadAndWriteValueView> {
     {
         auto&& [g, value] = *entity;
         // call 'init' of this client only
-        callBack("init")(value);
+        this->callBack("init")(value);
     }
 
     static void reflect(auto& visitor) {
@@ -29,7 +29,7 @@ struct ReadAndWriteValueView : webcom::View<ReadAndWriteValueView> {
         auto&& [g, value] = *entity;
         value = std::move(t);
         // call 'init' of this client only
-        callAll("setValue")(value);
+        this->callAll("setValue")(value);
 
     }
 };

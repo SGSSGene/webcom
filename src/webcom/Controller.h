@@ -33,52 +33,35 @@ FunctionSelector(std::string_view, CB) -> FunctionSelector<CB>;
 
 }
 
+template <typename T>
 struct View;
 
 struct Controller {
 private:
-    using Factory    = std::function<std::unique_ptr<View>()>;
-    using ViewList   = std::unordered_set<View*>;
-    using Dispatcher = std::function<void(View&, YAML::Node)>;
+    using ViewList   = std::unordered_set<View<int>*>;
+    using Dispatcher = std::function<void(View<int>&, YAML::Node)>;
 
-
-    Factory    viewFactory;
     ViewList   activeViews;
     Dispatcher viewDispatcher;
 
 public:
-    template <typename CB>
-    Controller(CB cb) {
-        viewFactory = std::move(cb);
-
-        viewDispatcher = [](View& view, YAML::Node msg) {
-            using TypedView = typename webcom::signature_t<CB>::return_t::element_type;
-            auto& typedView = dynamic_cast<TypedView&>(view);
-
-            auto selector = detail::FunctionSelector{msg["action"].as<std::string>(), [&](auto func) {
-                using Params = typename signature_t<std::decay_t<decltype(func)>>::params_t;
-                auto paramsAsTuple = fon::yaml::deserialize<Params>(msg["params"]);
-                std::apply([&](auto&&... params) {
-                    (typedView.*func)(std::forward<decltype(params)>(params)...);
-                }, paramsAsTuple);
-            }};
-            TypedView::reflect(selector);
-        };
-    }
-
     auto getViews() const -> auto const& {
         return activeViews;
     }
 
-    void removeView(View& view) {
-        activeViews.erase(&view);
-    }
-
-    void dispatchSignalFromClient(View& _view, YAML::Node _node) {
+private:
+    friend class View<int>;
+    void dispatchSignalFromClient(View<int>& _view, YAML::Node _node) {
         viewDispatcher(_view, _node);
     }
 
-    auto createView(std::function<void(YAML::Node)> _sendData) -> std::unique_ptr<View>;
+    void removeView(View<int>& view) {
+        activeViews.erase(&view);
+    }
+public:
+
+    template <typename TView, typename ...Args>
+    auto makeView(std::function<void(YAML::Node)> _sendData, Args&&... args) -> std::unique_ptr<View<int>>;
 
     struct Call {
         Controller const& service;
@@ -105,7 +88,6 @@ auto to_yaml(Args&&...args) -> YAML::Node {
     return fon::yaml::serialize<std::tuple<std::decay_t<Args>...>>(std::tuple{std::forward<Args>(args)...});
 }
 
-
 template <typename ...Args>
 auto convertToMessage(std::string_view _actionName, Args&&... _args) -> YAML::Node {
     auto node = YAML::Node{};
@@ -124,16 +106,42 @@ inline void Controller::Call::operator()(Args&&... _args) const {
     }
 }
 
-inline auto Controller::createView(std::function<void(YAML::Node)> _sendData) -> std::unique_ptr<View> {
-    View::gSendData   = std::move(_sendData);
-    View::gController = this;
+/*inline auto Controller::createView(std::function<void(YAML::Node)> _sendData) -> std::unique_ptr<View<int>> {
+    View<int>::gSendData   = std::move(_sendData);
+    View<int>::gController = this;
     auto view = viewFactory();
     auto ptr = view.get();
     activeViews.insert(view.get());
 
     return view;
-}
+}*/
+template <typename TView, typename ...Args>
+inline auto Controller::makeView(std::function<void(YAML::Node)> _sendData, Args&&... args) -> std::unique_ptr<View<int>> {
+    if (!viewDispatcher) {
+        viewDispatcher = [](View<int>& view, YAML::Node msg) {
+            auto& typedView = dynamic_cast<TView&>(view);
 
+            auto action = msg["action"].as<std::string>();
+
+            auto selector = detail::FunctionSelector{action, [&](auto func) {
+                using Params = typename signature_t<std::decay_t<decltype(func)>>::params_t;
+                auto paramsAsTuple = fon::yaml::deserialize<Params>(msg["params"]);
+                std::apply([&](auto&&... params) {
+                    (typedView.*func)(std::forward<decltype(params)>(params)...);
+                }, paramsAsTuple);
+            }};
+            TView::reflect(selector);
+        };
+    }
+
+    View<int>::gSendData   = std::move(_sendData);
+    View<int>::gController = this;
+    auto view = std::make_unique<TView>(std::forward<Args>(args)...);
+    auto ptr = view.get();
+    activeViews.insert(view.get());
+
+    return view;
+}
 
 
 }

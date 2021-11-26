@@ -90,3 +90,15 @@ target_link_libraries(exampleWebcom2
     fmt
     crypto
 )
+
+add_executable(testWebcom
+    src/testWebcom/main.cpp
+)
+target_link_libraries(testWebcom
+    Catch2
+    fon
+    webcom
+    yaml-cpp
+    fmt
+    crypto
+)

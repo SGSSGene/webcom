@@ -9,9 +9,9 @@
 
 namespace webcom {
 
-struct UserConnectionView : View {
+struct UserConnectionView : View<int> {
     Services& services;
-    std::unordered_map<size_t, std::unique_ptr<View>> views;
+    std::unordered_map<size_t, std::unique_ptr<View<int>>> views;
 
     UserConnectionView(Services& _services)
         : services{_services}

@@ -17,7 +17,7 @@ using Chat = webcom::GuardedType<std::vector<std::string>>;
  *
  * Each user (connection via websocket) will have its own view
  */
-struct ChatView : webcom::View {
+struct ChatView : webcom::View<int> {
     Chat& chat;
 
     ChatView(Chat& _chat)

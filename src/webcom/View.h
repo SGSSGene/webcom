@@ -6,6 +6,7 @@ namespace webcom {
 
 struct Controller;
 
+template <typename T>
 struct View {
     using SendData = std::function<void(YAML::Node)>;
     using GetSize  = std::function<size_t()>;
@@ -94,8 +95,9 @@ auto convertToMessage(std::string_view _actionName, Args&&... _args) -> YAML::No
 }
 }
 
+template <typename T>
 template <typename ...Args>
-void View::Call::operator()(Args&&... _args) const {
+void View<T>::Call::operator()(Args&&... _args) const {
     auto msg = detail::convertToMessage(actionName, std::forward<Args>(_args)...);
     if (type == Type::All) {
         for (auto& _view : view.controller.getViews()) {

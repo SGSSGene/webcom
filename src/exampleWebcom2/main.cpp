@@ -14,7 +14,7 @@ using Chat = webcom::GuardedType<std::vector<std::string>>;
  *
  * Each user (connection via websocket) will have its own view
  */
-struct ChatView : webcom::View {
+struct ChatView : webcom::View<int> {
     Chat& chat;
 
     ChatView(Chat& _chat)
@@ -42,13 +42,25 @@ int main(int argc, char const* const* argv) {
 
     Chat chat;
 
-    auto& userController = services.makeController("services", [&]() {
+    auto userController = webcom::Controller{[&]() {
+        // create access, in theory we could do an access check here
+        return webcom::make<webcom::UserConnectionView>(services);
+    }};
+    auto chatController = webcom::Controller{[&]() {
+        return webcom::make<ChatView>(chat);
+    }};
+
+/*    auto& userController = services.makeController("services", [&]() {
         // create access, in theory we could do an access check here
         return webcom::make<webcom::UserConnectionView>(services);
     });
     auto& chatController = services.makeController("chat", [&]() {
         return webcom::make<ChatView>(chat);
-    });
+    });*/
+
+    services.addController("services", userController);
+    services.addController("chat", chatController);
+
 
     auto expectedMessagesToBeSend = std::vector<std::string>{
         "action: message\n"

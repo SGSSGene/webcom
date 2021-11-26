@@ -17,7 +17,7 @@ namespace details {
 
 
 struct WebSocketHandler : cndl::WebsocketHandler {
-    using UserData = std::unique_ptr<View>;
+    using UserData = std::unique_ptr<View<int>>;
 
     using Websocket = cndl::Websocket;
     using Request   = cndl::Request;
@@ -76,13 +76,13 @@ struct CndlServices : Services {
     CndlServices(cndl::Server& _cndlServer, std::string const& _resource)
         : wsroute   {std::regex{_resource}, handler}
     {
-        makeController("services", [&]() {
+        /*makeController("services", [&]() {
             return webcom::make<UserConnectionView>(*this);
-        });
+        });*/
         _cndlServer.getDispatcher().addRoute(wsroute);
     }
 
-    using Services::makeController;
+//    using Services::makeController;
 };
 
 }

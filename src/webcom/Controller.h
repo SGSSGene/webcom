@@ -83,17 +83,7 @@ public:
             TypedView::reflect(selector);
         };
     }
-
-    template <typename X = View>
-    auto createView(std::function<void(YAML::Node)> _sendData, T _userData) -> std::unique_ptr<View> {
-        X::gSendData   = std::move(_sendData);
-        X::gController = this;
-        auto view = viewFactory(std::move(_userData));
-        auto ptr = view.get();
-        activeViews.insert(view.get());
-
-        return view;
-    }
+    auto createView(std::function<void(YAML::Node)> _sendData, T _userData) -> std::unique_ptr<View>;
 
     struct Call {
         ControllerT const& service;
@@ -139,5 +129,18 @@ void ControllerT<T>::Call::operator()(Args&&... _args) const {
         _view->sendData(msg);
     }
 }
+
+template <typename T>
+auto ControllerT<T>::createView(std::function<void(YAML::Node)> _sendData, T _userData) -> std::unique_ptr<View> {
+    View::gSendData   = std::move(_sendData);
+    View::gController = this;
+    auto view = viewFactory(std::move(_userData));
+    auto ptr = view.get();
+    activeViews.insert(view.get());
+
+    return view;
+}
+
+
 
 }

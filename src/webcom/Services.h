@@ -23,15 +23,14 @@ public:
         return iter->second;
     }
 
-    template <typename CB>
-    auto subscribe(std::string_view _serviceName, CB cb, T t) -> std::unique_ptr<View> {
+    auto subscribe(std::string_view _serviceName, std::function<void(YAML::Node)> _send, T t) -> std::unique_ptr<View> {
         auto&& [guard, list] = *controllerList;
 
         auto iter = list.find(std::string{_serviceName}); //!TODO how to make it work with std::string_view
         if (iter == end(list)) {
             throw std::runtime_error(fmt::format("unknown service \"{}\"", _serviceName));
         }
-        return iter->second.createView(std::move(cb), std::move(t));
+        return iter->second.createView(std::move(_send), std::move(t));
     }
 };
 

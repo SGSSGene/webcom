@@ -17,7 +17,7 @@ namespace details {
 
 
 struct WebSocketHandler : cndl::WebsocketHandler {
-    using UserData = std::unique_ptr<View<int>>;
+    using UserData = std::unique_ptr<ViewBase>;
 
     using Websocket = cndl::Websocket;
     using Request   = cndl::Request;

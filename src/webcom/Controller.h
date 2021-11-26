@@ -36,10 +36,11 @@ FunctionSelector(std::string_view, CB) -> FunctionSelector<CB>;
 template <typename T>
 struct View;
 
+template <typename T>
 struct Controller {
 private:
-    using ViewList   = std::unordered_set<View<int>*>;
-    using Dispatcher = std::function<void(View<int>&, YAML::Node)>;
+    using ViewList   = std::unordered_set<T*>;
+    using Dispatcher = std::function<void(T&, YAML::Node)>;
 
     ViewList   activeViews;
     Dispatcher viewDispatcher;
@@ -50,18 +51,20 @@ public:
     }
 
 private:
-    friend class View<int>;
-    void dispatchSignalFromClient(View<int>& _view, YAML::Node _node) {
-        viewDispatcher(_view, _node);
+    friend class View<T>;
+    void dispatchSignalFromClient(View<T>& _view, YAML::Node _node) {
+        auto& t = static_cast<T&>(_view);
+        viewDispatcher(t, _node);
     }
 
-    void removeView(View<int>& view) {
-        activeViews.erase(&view);
+    void removeView(View<T>& view) {
+        auto& t = static_cast<T&>(view);
+        activeViews.erase(&t);
     }
 public:
 
-    template <typename TView, typename ...Args>
-    auto makeView(std::function<void(YAML::Node)> _sendData, Args&&... args) -> std::unique_ptr<View<int>>;
+    template <typename ...Args>
+    auto makeView(std::function<void(YAML::Node)> _sendData, Args&&... args) -> std::unique_ptr<T>;
 
     struct Call {
         Controller const& service;
@@ -98,45 +101,45 @@ auto convertToMessage(std::string_view _actionName, Args&&... _args) -> YAML::No
 }
 }
 
+template <typename T>
 template <typename ...Args>
-inline void Controller::Call::operator()(Args&&... _args) const {
+inline void Controller<T>::Call::operator()(Args&&... _args) const {
     auto msg = detail2::convertToMessage(actionName, std::forward<Args>(_args)...);
     for (auto& _view : service.getViews()) {
         _view->sendData(msg);
     }
 }
 
-/*inline auto Controller::createView(std::function<void(YAML::Node)> _sendData) -> std::unique_ptr<View<int>> {
-    View<int>::gSendData   = std::move(_sendData);
-    View<int>::gController = this;
+/*inline auto Controller::createView(std::function<void(YAML::Node)> _sendData) -> std::unique_ptr<View<T>> {
+    View<T>::gSendData   = std::move(_sendData);
+    View<T>::gController = this;
     auto view = viewFactory();
     auto ptr = view.get();
     activeViews.insert(view.get());
 
     return view;
 }*/
-template <typename TView, typename ...Args>
-inline auto Controller::makeView(std::function<void(YAML::Node)> _sendData, Args&&... args) -> std::unique_ptr<View<int>> {
+template <typename T>
+template <typename ...Args>
+inline auto Controller<T>::makeView(std::function<void(YAML::Node)> _sendData, Args&&... args) -> std::unique_ptr<T> {
     if (!viewDispatcher) {
-        viewDispatcher = [](View<int>& view, YAML::Node msg) {
-            auto& typedView = dynamic_cast<TView&>(view);
-
+        viewDispatcher = [](T& view, YAML::Node msg) {
             auto action = msg["action"].as<std::string>();
 
             auto selector = detail::FunctionSelector{action, [&](auto func) {
                 using Params = typename signature_t<std::decay_t<decltype(func)>>::params_t;
                 auto paramsAsTuple = fon::yaml::deserialize<Params>(msg["params"]);
                 std::apply([&](auto&&... params) {
-                    (typedView.*func)(std::forward<decltype(params)>(params)...);
+                    (view.*func)(std::forward<decltype(params)>(params)...);
                 }, paramsAsTuple);
             }};
-            TView::reflect(selector);
+            T::reflect(selector);
         };
     }
 
-    View<int>::gSendData   = std::move(_sendData);
-    View<int>::gController = this;
-    auto view = std::make_unique<TView>(std::forward<Args>(args)...);
+    ViewBase::gSendData  = std::move(_sendData);
+    View<T>::gController = this;
+    auto view = std::make_unique<T>(std::forward<Args>(args)...);
     auto ptr = view.get();
     activeViews.insert(view.get());
 

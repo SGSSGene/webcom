@@ -4,17 +4,24 @@
 
 namespace webcom {
 
+template <typename T>
 struct Controller;
 
-template <typename T>
-struct View {
+struct ViewBase {
     using SendData = std::function<void(YAML::Node)>;
-    using GetSize  = std::function<size_t()>;
 
-    thread_local static inline SendData    gSendData;
-    thread_local static inline Controller* gController{};
+    thread_local static inline SendData       gSendData;
     SendData sendData{std::move(gSendData)};
-    Controller& controller{*gController};
+
+    virtual ~ViewBase() = default;
+
+    virtual void dispatchSignalFromClient(YAML::Node _node) = 0;
+
+};
+template <typename T>
+struct View : ViewBase {
+    thread_local static inline Controller<T>* gController{};
+    Controller<T>& controller{*gController};
 
     View() = default;
     View(View const&) = delete;
@@ -64,7 +71,7 @@ struct View {
         return Call{Call::Type::Others, *this, _actionName};
     }
 
-    void dispatchSignalFromClient(YAML::Node _node) {
+    void dispatchSignalFromClient(YAML::Node _node) override {
         _dispatchSignalFromClient(_node);
     }
 

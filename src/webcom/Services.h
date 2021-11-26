@@ -13,7 +13,7 @@ class Services {
 public:
 //    GuardedType<std::unordered_map<std::string, Controller>> controllerList;
     using SendCB = std::function<void(YAML::Node)>;
-    using CB     = std::function<std::unique_ptr<View<int>>(SendCB)>;
+    using CB     = std::function<std::unique_ptr<ViewBase>(SendCB)>;
 
 private:
     GuardedType<std::unordered_map<std::string, CB>> controllerList;
@@ -31,7 +31,7 @@ public:
         list.try_emplace(std::string{_key}, _cb);
     }
 
-    auto subscribe(std::string_view _serviceName, SendCB _send) -> std::unique_ptr<View<int>> {
+    auto subscribe(std::string_view _serviceName, SendCB _send) -> std::unique_ptr<ViewBase> {
         auto&& [guard, list] = *controllerList;
 
         auto iter = list.find(std::string{_serviceName}); //!TODO how to make it work with std::string_view

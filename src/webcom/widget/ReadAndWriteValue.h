@@ -10,7 +10,7 @@ template <typename T>
 using ReadAndWriteValue = webcom::GuardedType<T>;
 
 template <typename T>
-struct ReadAndWriteValueView : webcom::View<int> {
+struct ReadAndWriteValueView : webcom::View<ReadAndWriteValueView> {
     ReadAndWriteValue<T>& entity;
 
     ReadAndWriteValueView(ReadAndWriteValue<T>& _entity)

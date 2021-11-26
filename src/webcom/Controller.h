@@ -35,33 +35,16 @@ FunctionSelector(std::string_view, CB) -> FunctionSelector<CB>;
 
 struct View;
 
-struct ControllerBase {
-protected:
-    using Dispatcher = std::function<void(View&, YAML::Node)>;
-    using ViewList   = std::unordered_set<View*>;
-
-    Dispatcher     viewDispatcher;
-    ViewList       activeViews;
-
-public:
-    auto getViews() const -> auto const& {
-        return activeViews;
-    }
-
-    void removeView(View& view) {
-        activeViews.erase(&view);
-    }
-
-    void dispatchSignalFromClient(View& _view, YAML::Node _node) {
-        viewDispatcher(_view, _node);
-    }
-};
-
-struct Controller : ControllerBase {
+struct Controller {
 private:
-    using Factory = std::function<std::unique_ptr<View>()>;
+    using Factory    = std::function<std::unique_ptr<View>()>;
+    using ViewList   = std::unordered_set<View*>;
+    using Dispatcher = std::function<void(View&, YAML::Node)>;
 
-    Factory viewFactory;
+
+    Factory    viewFactory;
+    ViewList   activeViews;
+    Dispatcher viewDispatcher;
 
 public:
     template <typename CB>
@@ -82,6 +65,19 @@ public:
             TypedView::reflect(selector);
         };
     }
+
+    auto getViews() const -> auto const& {
+        return activeViews;
+    }
+
+    void removeView(View& view) {
+        activeViews.erase(&view);
+    }
+
+    void dispatchSignalFromClient(View& _view, YAML::Node _node) {
+        viewDispatcher(_view, _node);
+    }
+
     auto createView(std::function<void(YAML::Node)> _sendData) -> std::unique_ptr<View>;
 
     struct Call {

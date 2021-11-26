@@ -1,6 +1,4 @@
-let connectWebcom = function(url) {
-    console.log("opening new ws " + url);
-
+let connectWebcom = function(url, onClose) {
     let rObj = {};
 
     rObj.id = 0;
@@ -19,7 +17,6 @@ let connectWebcom = function(url) {
             let node = JSON.parse(text).params[0];
             let id = node.id;
             let action  = node.action;
-            console.log(node.params);
             let params = [];
             for (let i in node.params) {
                 params.push(node.params[i]);
@@ -34,9 +31,11 @@ let connectWebcom = function(url) {
     }
     rObj.ws.onclose = function(evt) {
         rObj.isOpen = false;
+        onClose();
     }
     rObj.ws.onerror = function(evt) {
         console.log("some error happend" +evt);
+        onClose();
     }
     let sendRaw = function(msg) {
         if (rObj.isOpen) {

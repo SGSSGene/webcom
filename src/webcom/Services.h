@@ -11,7 +11,7 @@ namespace webcom {
 
 class Services {
 public:
-    using SendCB = std::function<void(YAML::Node)>;
+    using SendCB = std::function<void(Json::Value)>;
     using CB     = std::function<std::unique_ptr<ViewBase>(SendCB)>;
 
 private:

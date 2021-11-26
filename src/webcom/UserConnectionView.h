@@ -3,7 +3,7 @@
 #include "Services.h"
 #include "View.h"
 
-#include <fon/yaml.h>
+#include <fon/json.h>
 #include <memory>
 #include <unordered_map>
 
@@ -25,7 +25,7 @@ struct UserConnectionView : View<UserConnectionView> {
     }
 
     void subscribe(size_t _id, std::string _serviceName) {
-        views.try_emplace(_id, services.subscribe(std::move(_serviceName), [this, _id](YAML::Node _node) {
+        views.try_emplace(_id, services.subscribe(std::move(_serviceName), [this, _id](Json::Value _node) {
             _node["id"] = _id;
             callBack("message")(_node);
         }));
@@ -35,7 +35,7 @@ struct UserConnectionView : View<UserConnectionView> {
         views.erase(_id);
     }
 
-    void message(size_t id, YAML::Node data) {
+    void message(size_t id, Json::Value data) {
         views.at(id)->dispatchSignalFromClient(data);
     }
 };

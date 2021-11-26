@@ -7,6 +7,7 @@
 
 #include <cassert>
 #include <json/json.h>
+#include <functional>
 
 namespace fon::json {
 
@@ -54,7 +55,7 @@ auto serialize(T const& _input, Json::Value start = {}) -> Json::Value {
             auto adapter = fon::list_adapter{obj};
             adapter.visit([&](size_t key, auto& value) {
                 auto right = stackVisit(value);
-                top[top.size()] = right;
+                top.append(right);
             });
         } else if constexpr (fon::has_map_adapter_v<ValueT>) {
             auto adapter = fon::map_adapter{obj};
@@ -143,14 +144,27 @@ auto deserialize(Json::Value root) -> T {
                               or std::is_same_v<ValueT, uint16_t>
                               or std::is_same_v<ValueT, int32_t>
                               or std::is_same_v<ValueT, uint32_t>) {
-                    auto v = top.template as<int64_t>();
+                    auto v = top.asInt64();
                     if (v < std::numeric_limits<ValueT>::min() or v > std::numeric_limits<ValueT>::max()) {
                         throw std::runtime_error("value out of range");
                     }
                     obj = v;
+                } else if constexpr (std::is_same_v<ValueT, int64_t>) {
+                    obj = top.asInt64();
+                } else if constexpr (std::is_same_v<ValueT, uint64_t>) {
+                    obj = top.asUInt64();
+                } else if constexpr (std::is_same_v<ValueT, float>) {
+                    obj = top.asFloat();
+                } else if constexpr (std::is_same_v<ValueT, double>) {
+                    obj = top.asDouble();
+                } else if constexpr (std::is_same_v<ValueT, bool>) {
+                    obj = top.asBool();
+                } else if constexpr (std::is_same_v<ValueT, std::string>) {
+                    obj = top.asString();
                 } else {
-                    // !TODO no check, we just hope it works
-                    obj = top.template as<ValueT>();
+                    []<bool flag = false>() {
+                        static_assert(flag, "no known way to parse this datatype");
+                    }();
                 }
             } else if constexpr (fon::has_list_adapter_v<ValueT>) {
                 auto adapter = fon::list_adapter<ValueT>{obj, top.size()};
@@ -187,7 +201,6 @@ auto deserialize(Json::Value root) -> T {
                         }
                         return "";
                     }();
-//                    auto str_key = Json::Value{key}.toStyledString();//Json::writeString(Json::StreamWriterBuilder{}, key);
                     auto g = StackGuard{nodeStack, top[str_key]};
                     visitor % value;
                 }, [&](auto& value) {

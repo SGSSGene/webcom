@@ -7,14 +7,14 @@
 namespace webcom {
 
 struct ViewBase {
-    using SendData = std::function<void(YAML::Node)>;
+    using SendData = std::function<void(Json::Value)>;
 
     thread_local static inline SendData       gSendData;
     SendData sendData{std::move(gSendData)};
 
     virtual ~ViewBase() = default;
 
-    virtual void dispatchSignalFromClient(YAML::Node _node) = 0;
+    virtual void dispatchSignalFromClient(Json::Value _node) = 0;
 
 };
 template <typename T>
@@ -80,7 +80,7 @@ struct View : ViewBase {
         return Call{Call::Type::Others, *this, _actionName};
     }
 
-    void dispatchSignalFromClient(YAML::Node _node) override {
+    void dispatchSignalFromClient(Json::Value _node) override {
         controller.dispatchSignalFromClient(*this, _node);
     }
 

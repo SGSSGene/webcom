@@ -16,7 +16,7 @@ let connectWebcom = function(url) {
     rObj.ws.onmessage = function(evt) {
         if (evt.data) {
             let text = evt.data;
-            let node = YAML.parse(text).params[0];
+            let node = JSON.parse(text).params[0];
             let id = node.id;
             let action  = node.action;
             console.log(node.params);
@@ -50,16 +50,16 @@ let connectWebcom = function(url) {
         }
     }
     let send = function(id, action) {
-        let params = [];
+        let params = {};
         for (let i = 2; i < arguments.length; i++) {
-            params.push(arguments[i]);
+            params[(i-2) + ""] = arguments[i];
         }
         sendRaw({
             action: "message",
-            params: [id, {
+            params: {"0": id, "1": {
                 action: action,
                 params: params
-            }]
+            }}
         });
     };
     rObj.subscribe = function(serviceName) {
@@ -75,14 +75,14 @@ let connectWebcom = function(url) {
         adapter.unsubscribe = function() {
             sendRaw({
                 action:  "unsubscribe",
-                params:  [adapter.id]
+                params:  {"0": adapter.id}
             });
         };
 
         rObj.dispatcher[adapter.id] = adapter;
         sendRaw({
             action:  "subscribe",
-            params:  [adapter.id, serviceName]
+            params:  {"0": adapter.id, "1": serviceName}
         });
         return adapter;
     }

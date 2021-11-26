@@ -1,7 +1,7 @@
 #define CATCH_CONFIG_MAIN
 #include <catch2/catch.hpp>
 
-#include <fon/yaml.h>
+#include <fon/json.h>
 #include <fon/std/all.h>
 #include <webcom/webcom.h>
 
@@ -46,17 +46,12 @@ TEST_CASE("try controller", "[webcom][controller]") {
     auto chatController = webcom::Controller<ChatView>{};
 
     auto expectedMessagesToBeSend = std::vector<std::string>{
-        "action: init\n"
-        "params:\n"
-        "  0: ~",
-        "action: addMsg\n"
-        "params:\n"
-        "  0: uiae"
-    };
-    auto cc = chatController.makeView([&](YAML::Node node) {
-        YAML::Emitter emit;
-        emit << node;
-        auto actual = std::string{emit.c_str()};
+R"({"action":"init","params":{"0":null}}
+)",
+R"({"action":"addMsg","params":{"0":"uiae"}}
+)"};
+    auto cc = chatController.makeView([&](Json::Value node) {
+        auto actual = Json::FastWriter{}.write(node);
 
         REQUIRE(!expectedMessagesToBeSend.empty());
 
@@ -65,9 +60,9 @@ TEST_CASE("try controller", "[webcom][controller]") {
     }, chat);
 
     {
-        auto msg = YAML::Node{};
+        auto msg = Json::Value{};
         msg["action"] = "addText";
-        msg["params"].push_back("uiae");
+        msg["params"]["0"] = "uiae";
         cc->dispatchSignalFromClient(msg);
     }
 
@@ -88,25 +83,12 @@ TEST_CASE("try services", "[webcom][services]") {
 
 
     auto expectedMessagesToBeSend = std::vector<std::string>{
-        "action: message\n"
-        "params:\n"
-        "  0:\n"
-        "    action: init\n"
-        "    params:\n"
-        "      0: ~\n"
-        "    id: 0",
-        "action: message\n"
-        "params:\n"
-        "  0:\n"
-        "    action: addMsg\n"
-        "    params:\n"
-        "      0: uiae\n"
-        "    id: 0",
-    };
-    auto uv = userController.makeView([&](YAML::Node node) {
-        YAML::Emitter emit;
-        emit << node;
-        auto actual = std::string{emit.c_str()};
+R"({"action":"message","params":{"0":{"action":"init","id":0,"params":{"0":null}}}}
+)",
+R"({"action":"message","params":{"0":{"action":"addMsg","id":0,"params":{"0":"uiae"}}}}
+)"};
+    auto uv = userController.makeView([&](Json::Value node) {
+        auto actual = Json::FastWriter{}.write(node);
 
         REQUIRE(!expectedMessagesToBeSend.empty());
 
@@ -115,20 +97,20 @@ TEST_CASE("try services", "[webcom][services]") {
     }, services);
 
     {
-        auto msg = YAML::Node{};
+        auto msg = Json::Value{};
         msg["action"] = "subscribe";
-        msg["params"].push_back(0);
-        msg["params"].push_back("chat");
+        msg["params"]["0"] = 0;
+        msg["params"]["1"] = "chat";
         uv->dispatchSignalFromClient(msg);
     }
     {
-        auto msg = YAML::Node{};
+        auto msg = Json::Value{};
         msg["action"] = "message";
-        msg["params"].push_back(0);
-        auto params = YAML::Node{};
+        msg["params"]["0"] = 0;
+        auto params = Json::Value{};
         params["action"] = "addText";
-        params["params"].push_back("uiae");
-        msg["params"].push_back(params);
+        params["params"]["0"] = "uiae";
+        msg["params"]["1"] = params;
         uv->dispatchSignalFromClient(msg);
     }
 

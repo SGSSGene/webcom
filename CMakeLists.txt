@@ -64,6 +64,7 @@ target_include_directories(${PROJECT_NAME} INTERFACE src)
 target_link_libraries(${PROJECT_NAME} INTERFACE
     cndl
     fon
+    jsoncpp
 )
 
 

@@ -3,13 +3,14 @@
 #include "Services.h"
 #include "UserConnectionView.h"
 
-#include <fon/yaml.h>
 #include <cndl/Route.h>
 #include <cndl/Server.h>
-#include <simplyfile/socket/Host.h>
-#include <fstream>
 #include <filesystem>
+#include <fon/yaml.h>
+#include <fstream>
 #include <iostream>
+#include <json/reader.h>
+#include <simplyfile/socket/Host.h>
 #include <thread>
 
 namespace webcom {
@@ -31,11 +32,8 @@ struct WebSocketHandler : cndl::WebsocketHandler {
 
     void onOpen([[maybe_unused]] Request const& request, Websocket& ws) {
         auto g = std::lock_guard{mutex};
-        auto view = services.subscribe("services", [&ws](YAML::Node node) {
-            YAML::Emitter emit;
-            emit << node;
-
-            ws.send(std::string{emit.c_str()});
+        auto view = services.subscribe("services", [&ws](Json::Value node) {
+            ws.send(Json::FastWriter{}.write(node));
         });
         cndlUserData.try_emplace(&ws, std::move(view));
         fmt::print("new connection\n");
@@ -47,8 +45,9 @@ struct WebSocketHandler : cndl::WebsocketHandler {
         if (std::holds_alternative<std::string_view>(msg)) {
             auto const& message = std::get<std::string_view>(msg);
             try {
-                auto node = YAML::Load(std::string{message});
-                if (not node.IsMap()) {
+                Json::Value node;
+                Json::Reader{}.parse(std::string{message}, node);
+                if (not node.isObject()) {
                     throw std::runtime_error("invalid message");
                 }
                 userData->dispatchSignalFromClient(node);

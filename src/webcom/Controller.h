@@ -40,11 +40,8 @@ template <typename T>
 struct Controller {
 private:
     using ViewList   = std::unordered_set<T*>;
-    using Dispatcher = std::function<void(T&, YAML::Node)>;
 
     ViewList   activeViews;
-    Dispatcher viewDispatcher;
-
 public:
     auto getViews() const -> auto const& {
         return activeViews;
@@ -52,9 +49,20 @@ public:
 
 private:
     friend class View<T>;
-    void dispatchSignalFromClient(View<T>& _view, YAML::Node _node) {
-        auto& t = static_cast<T&>(_view);
-        viewDispatcher(t, _node);
+    void dispatchSignalFromClient(View<T>& _view, YAML::Node msg) {
+        auto& view = static_cast<T&>(_view);
+
+        auto action = msg["action"].as<std::string>();
+
+        // calls the correct function from ::reflect
+        auto selector = detail::FunctionSelector{action, [&](auto func) {
+            using Params = typename signature_t<std::decay_t<decltype(func)>>::params_t;
+            auto paramsAsTuple = fon::yaml::deserialize<Params>(msg["params"]);
+            std::apply([&](auto&&... params) {
+                (view.*func)(std::forward<decltype(params)>(params)...);
+            }, paramsAsTuple);
+        }};
+        T::reflect(selector);
     }
 
     void removeView(View<T>& view) {
@@ -110,34 +118,10 @@ inline void Controller<T>::Call::operator()(Args&&... _args) const {
     }
 }
 
-/*inline auto Controller::createView(std::function<void(YAML::Node)> _sendData) -> std::unique_ptr<View<T>> {
-    View<T>::gSendData   = std::move(_sendData);
-    View<T>::gController = this;
-    auto view = viewFactory();
-    auto ptr = view.get();
-    activeViews.insert(view.get());
-
-    return view;
-}*/
 template <typename T>
 template <typename ...Args>
 inline auto Controller<T>::makeView(std::function<void(YAML::Node)> _sendData, Args&&... args) -> std::unique_ptr<T> {
-    if (!viewDispatcher) {
-        viewDispatcher = [](T& view, YAML::Node msg) {
-            auto action = msg["action"].as<std::string>();
-
-            auto selector = detail::FunctionSelector{action, [&](auto func) {
-                using Params = typename signature_t<std::decay_t<decltype(func)>>::params_t;
-                auto paramsAsTuple = fon::yaml::deserialize<Params>(msg["params"]);
-                std::apply([&](auto&&... params) {
-                    (view.*func)(std::forward<decltype(params)>(params)...);
-                }, paramsAsTuple);
-            }};
-            T::reflect(selector);
-        };
-    }
-
-    ViewBase::gSendData  = std::move(_sendData);
+    View<T>::gSendData  = std::move(_sendData);
     View<T>::gController = this;
     auto view = std::make_unique<T>(std::forward<Args>(args)...);
     auto ptr = view.get();

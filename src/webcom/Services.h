@@ -33,15 +33,6 @@ public:
         }
         return iter->second.createView(std::move(cb), std::move(t));
     }
-
-    auto getController(std::string_view _key) -> ControllerT<T>& {
-        auto&& [guard, list] = *controllerList;
-        auto iter = list.find(std::string{_key}); //!TODO how to make it work with std::string_view
-        if (iter == end(list)) {
-            throw std::runtime_error(fmt::format("unknown service \"{}\"", _key));
-        }
-        return iter->second;
-    }
 };
 
 }

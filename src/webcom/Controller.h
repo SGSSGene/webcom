@@ -35,7 +35,7 @@ FunctionSelector(std::string_view, CB) -> FunctionSelector<CB>;
 
 struct View;
 
-struct Service {
+struct Controller {
 protected:
     using Dispatcher = std::function<void(View&, YAML::Node)>;
     using ViewList   = std::unordered_set<View*>;
@@ -58,7 +58,7 @@ public:
 };
 
 template <typename T>
-struct ServiceT : Service {
+struct ControllerT : Controller {
 private:
     using Factory = std::function<std::unique_ptr<View>(T)>;
 
@@ -66,7 +66,7 @@ private:
 
 public:
     template <typename CB>
-    ServiceT(CB cb) {
+    ControllerT(CB cb) {
         viewFactory = std::move(cb);
 
         viewDispatcher = [](View& view, YAML::Node msg) {
@@ -86,8 +86,8 @@ public:
 
     template <typename X = View>
     auto createView(std::function<void(YAML::Node)> _sendData, T _userData) -> std::unique_ptr<View> {
-        X::gSendData = std::move(_sendData);
-        X::gService = this;
+        X::gSendData   = std::move(_sendData);
+        X::gController = this;
         auto view = viewFactory(std::move(_userData));
         auto ptr = view.get();
         activeViews.insert(view.get());
@@ -96,7 +96,7 @@ public:
     }
 
     struct Call {
-        ServiceT const& service;
+        ControllerT const& service;
         std::string_view actionName;
 
         template <typename ...Args>
@@ -133,7 +133,7 @@ auto convertToMessage(std::string_view _actionName, Args&&... _args) -> YAML::No
 
 template <typename T>
 template <typename ...Args>
-void ServiceT<T>::Call::operator()(Args&&... _args) const {
+void ControllerT<T>::Call::operator()(Args&&... _args) const {
     auto msg = detail2::convertToMessage(actionName, std::forward<Args>(_args)...);
     for (auto& _view : service.getViews()) {
         _view->sendData(msg);

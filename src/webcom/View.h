@@ -4,16 +4,16 @@
 
 namespace webcom {
 
-struct Service;
+struct Controller;
 
 struct View {
     using SendData = std::function<void(YAML::Node)>;
     using GetSize  = std::function<size_t()>;
 
-    thread_local static inline SendData gSendData;
-    thread_local static inline Service* gService{};
+    thread_local static inline SendData    gSendData;
+    thread_local static inline Controller* gController{};
     SendData sendData{std::move(gSendData)};
-    Service& service{*gService};
+    Controller& controller{*gController};
 
     View() = default;
     View(View const&) = delete;
@@ -24,7 +24,7 @@ struct View {
     }
     template <typename X = void>
     void _dtor() {
-        service.removeView(*this);
+        controller.removeView(*this);
     }
 
 
@@ -69,7 +69,7 @@ struct View {
 
     template <typename X = void>
     void _dispatchSignalFromClient(YAML::Node _node) {
-        service.dispatchSignalFromClient(*this, _node);
+        controller.dispatchSignalFromClient(*this, _node);
     }
 };
 
@@ -98,13 +98,13 @@ template <typename ...Args>
 void View::Call::operator()(Args&&... _args) const {
     auto msg = detail::convertToMessage(actionName, std::forward<Args>(_args)...);
     if (type == Type::All) {
-        for (auto& _view : view.service.getViews()) {
+        for (auto& _view : view.controller.getViews()) {
             _view->sendData(msg);
         }
     } else if (type == Type::Back) {
         view.sendData(msg);
     } else if (type == Type::Others) {
-        for (auto& _view : view.service.getViews()) {
+        for (auto& _view : view.controller.getViews()) {
             if (_view != &view) {
                 _view->sendData(msg);
             }

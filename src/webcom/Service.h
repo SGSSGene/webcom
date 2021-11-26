@@ -33,66 +33,66 @@ FunctionSelector(std::string_view, CB) -> FunctionSelector<CB>;
 
 }
 
-struct ViewController;
+struct View;
 
 struct Service {
 protected:
-    using Dispatcher     = std::function<void(ViewController&, YAML::Node)>;
-    using ControllerList = std::unordered_set<ViewController*>;
+    using Dispatcher     = std::function<void(View&, YAML::Node)>;
+    using ControllerList = std::unordered_set<View*>;
 
-    Dispatcher     viewControllerDispatcher;
-    ControllerList activeViewControllers;
+    Dispatcher     viewDispatcher;
+    ControllerList activeViews;
 
 public:
-    auto getViewControllers() const -> auto const& {
-        return activeViewControllers;
+    auto getViews() const -> auto const& {
+        return activeViews;
     }
 
-    void removeViewController(ViewController& viewController) {
-        activeViewControllers.erase(&viewController);
+    void removeView(View& view) {
+        activeViews.erase(&view);
     }
 
-    void dispatchSignalFromClient(ViewController& _viewController, YAML::Node _node) {
-        viewControllerDispatcher(_viewController, _node);
+    void dispatchSignalFromClient(View& _view, YAML::Node _node) {
+        viewDispatcher(_view, _node);
     }
 };
 
 template <typename T>
 struct ServiceT : Service {
 private:
-    using Factory = std::function<std::unique_ptr<ViewController>(T)>;
+    using Factory = std::function<std::unique_ptr<View>(T)>;
 
-    Factory viewControllerFactory;
+    Factory viewFactory;
 
 public:
     template <typename CB>
     ServiceT(CB cb) {
-        viewControllerFactory = std::move(cb);
+        viewFactory = std::move(cb);
 
-        viewControllerDispatcher = [](ViewController& viewController, YAML::Node msg) {
-            using TypedViewController = typename webcom::signature_t<CB>::return_t::element_type;
-            auto& typedViewController = dynamic_cast<TypedViewController&>(viewController);
+        viewDispatcher = [](View& view, YAML::Node msg) {
+            using TypedView = typename webcom::signature_t<CB>::return_t::element_type;
+            auto& typedView = dynamic_cast<TypedView&>(view);
 
             auto selector = detail::FunctionSelector{msg["action"].as<std::string>(), [&](auto func) {
                 using Params = typename signature_t<std::decay_t<decltype(func)>>::params_t;
                 auto paramsAsTuple = fon::yaml::deserialize<Params>(msg["params"]);
                 std::apply([&](auto&&... params) {
-                    (typedViewController.*func)(std::forward<decltype(params)>(params)...);
+                    (typedView.*func)(std::forward<decltype(params)>(params)...);
                 }, paramsAsTuple);
             }};
-            TypedViewController::reflect(selector);
+            TypedView::reflect(selector);
         };
     }
 
-    template <typename X = ViewController>
-    auto createViewController(std::function<void(YAML::Node)> _sendData, T _userData) -> std::unique_ptr<ViewController> {
+    template <typename X = View>
+    auto createView(std::function<void(YAML::Node)> _sendData, T _userData) -> std::unique_ptr<View> {
         X::gSendData = std::move(_sendData);
         X::gService = this;
-        auto viewController = viewControllerFactory(std::move(_userData));
-        auto ptr = viewController.get();
-        activeViewControllers.insert(viewController.get());
+        auto view = viewFactory(std::move(_userData));
+        auto ptr = view.get();
+        activeViews.insert(view.get());
 
-        return viewController;
+        return view;
     }
 
     struct Call {
@@ -111,7 +111,7 @@ public:
 
 }
 
-#include "ViewController.h"
+#include "View.h"
 
 namespace webcom {
 namespace detail2 {
@@ -135,8 +135,8 @@ template <typename T>
 template <typename ...Args>
 void ServiceT<T>::Call::operator()(Args&&... _args) const {
     auto msg = detail2::convertToMessage(actionName, std::forward<Args>(_args)...);
-    for (auto& _viewController : service.getViewControllers()) {
-        _viewController->sendData(msg);
+    for (auto& _view : service.getViews()) {
+        _view->sendData(msg);
     }
 }
 

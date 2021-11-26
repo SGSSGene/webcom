@@ -10,14 +10,14 @@
  **/
 using Chat = webcom::GuardedType<std::vector<std::string>>;
 
-/** This represents the Controller and View (MVC) of a single User accessing the chat
+/** This represents the View (MVC) of a single User accessing the chat
  *
  * Each user (connection via websocket) will have its own view
  */
-struct ChatViewController : webcom::ViewController {
+struct ChatView : webcom::View {
     Chat& chat;
 
-    ChatViewController(Chat& _chat)
+    ChatView(Chat& _chat)
         : chat{_chat}
     {
         auto&& [g, list] = *chat;
@@ -27,7 +27,7 @@ struct ChatViewController : webcom::ViewController {
 
     static constexpr void reflect(auto& visitor) {
         // function that can be called by the client (webbrowser)
-        visitor("addText", &ChatViewController::addText);
+        visitor("addText", &ChatView::addText);
     }
 
     void addText(std::string str) {
@@ -42,12 +42,12 @@ int main(int argc, char const* const* argv) {
 
     Chat chat;
 
-    auto& userService = services.provideViewController("services", [&](size_t userData) {
+    auto& userService = services.provideView("services", [&](size_t userData) {
         // create access, in theory we could do an access check here
-        return webcom::make<webcom::UserConnectionViewController<size_t>>(services, userData);
+        return webcom::make<webcom::UserConnectionView<size_t>>(services, userData);
     });
-    auto& chatService = services.provideViewController("chat", [&](size_t) {
-        return webcom::make<ChatViewController>(chat);
+    auto& chatService = services.provideView("chat", [&](size_t) {
+        return webcom::make<ChatView>(chat);
     });
 
     auto expectedMessagesToBeSend = std::vector<std::string>{
@@ -66,7 +66,7 @@ int main(int argc, char const* const* argv) {
         "      0: uiae\n"
         "    id: 0",
     };
-    auto uv = userService.createViewController([&](YAML::Node node) {
+    auto uv = userService.createView([&](YAML::Node node) {
         YAML::Emitter emit;
         emit << node;
         auto actual = std::string{emit.c_str()};
@@ -112,10 +112,10 @@ int main(int argc, char const* const* argv) {
 
     auto chatService = webcom::Service("chat", [&]() {
         // create access, in theory we could do an access check here
-        return webcom::make<ChatViewController>(chat);
+        return webcom::make<ChatView>(chat);
     });
 
-    auto vc = chatService.createViewController([](std::string_view data) {
+    auto vc = chatService.createView([](std::string_view data) {
         fmt::print("sending data:\n{}\n---\n\n", data);
     });
 
@@ -133,7 +133,7 @@ int main(int argc, char const* const* argv) {
         vc->dispatchSignalFromClient(msg);
     }
     {
-       auto vc = chatService.createViewController([](std::string_view data) {
+       auto vc = chatService.createView([](std::string_view data) {
             fmt::print("second user:\n{}\n---\n\n", data);
         });
     }

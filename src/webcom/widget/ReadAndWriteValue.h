@@ -1,5 +1,8 @@
 #pragma once
 
+#include "../GuardedType.h"
+#include "../View.h"
+
 namespace webcom::widget {
 
 // A value that can only be read by the front end
@@ -7,10 +10,10 @@ template <typename T>
 using ReadAndWriteValue = webcom::GuardedType<T>;
 
 template <typename T>
-struct ReadAndWriteValueViewController : webcom::ViewController {
+struct ReadAndWriteValueView : webcom::View {
     ReadAndWriteValue<T>& entity;
 
-    ReadAndWriteValueViewController(ReadAndWriteValue<T>& _entity)
+    ReadAndWriteValueView(ReadAndWriteValue<T>& _entity)
         : entity{_entity}
     {
         auto&& [g, value] = *entity;
@@ -19,7 +22,7 @@ struct ReadAndWriteValueViewController : webcom::ViewController {
     }
 
     static void reflect(auto& visitor) {
-        visitor("setValue", &ReadAndWriteValueViewController<T>::setValue);
+        visitor("setValue", &ReadAndWriteValueView<T>::setValue);
     }
 
     void setValue(T t) {

@@ -13,14 +13,14 @@
  **/
 using Chat = webcom::GuardedType<std::vector<std::string>>;
 
-/** This represents the Controller and View (MVC) of a single User accessing the chat
+/** This represents the View (MVC) of a single User accessing the chat
  *
  * Each user (connection via websocket) will have its own view
  */
-struct ChatViewController : webcom::ViewController {
+struct ChatView : webcom::View {
     Chat& chat;
 
-    ChatViewController(Chat& _chat)
+    ChatView(Chat& _chat)
         : chat{_chat}
     {
         auto&& [g, list] = *chat;
@@ -30,7 +30,7 @@ struct ChatViewController : webcom::ViewController {
 
     static constexpr void reflect(auto& visitor) {
         // function that can be called by the client (webbrowser)
-        visitor("addText", &ChatViewController::addText);
+        visitor("addText", &ChatView::addText);
     }
 
     void addText(std::string str) {
@@ -47,14 +47,14 @@ int main(int argc, char const* const* argv) {
     auto cndlServices = webcom::CndlServices<size_t>{server.cndlServer, "/ws"};
 
     Chat chat;
-    cndlServices.provideViewController("chat", [&](size_t) {
+    cndlServices.provideView("chat", [&](size_t) {
         // create access, in theory we could do an access check here
-        return webcom::make<ChatViewController>(chat);
+        return webcom::make<ChatView>(chat);
     });
 
     auto readValue = webcom::widget::ReadValue<size_t>{};
-    auto& readValueService = cndlServices.provideViewController("readValue", [&](size_t) {
-        return webcom::make<webcom::widget::ReadValueViewController<size_t>>(readValue);
+    auto& readValueService = cndlServices.provideView("readValue", [&](size_t) {
+        return webcom::make<webcom::widget::ReadValueView<size_t>>(readValue);
     });
     auto t = std::thread{[&]() {
         size_t x = {0};
@@ -67,8 +67,8 @@ int main(int argc, char const* const* argv) {
     }};
 
     auto readAndWriteValue = webcom::widget::ReadAndWriteValue<size_t>{};
-    auto& readAndWriteValueService = cndlServices.provideViewController("readAndWriteValue", [&](size_t) {
-        return webcom::make<webcom::widget::ReadAndWriteValueViewController<size_t>>(readAndWriteValue);
+    auto& readAndWriteValueService = cndlServices.provideView("readAndWriteValue", [&](size_t) {
+        return webcom::make<webcom::widget::ReadAndWriteValueView<size_t>>(readAndWriteValue);
     });
 
 

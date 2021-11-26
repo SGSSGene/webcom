@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Services.h"
-#include "UserConnectionViewController.h"
+#include "UserConnectionView.h"
 
 #include <fon/yaml.h>
 #include <cndl/Route.h>
@@ -17,7 +17,7 @@ namespace details {
 
 
 struct WebSocketHandler : cndl::WebsocketHandler {
-    using UserData = std::unique_ptr<ViewController>;
+    using UserData = std::unique_ptr<View>;
 
     using Websocket = cndl::Websocket;
     using Request   = cndl::Request;
@@ -31,13 +31,13 @@ struct WebSocketHandler : cndl::WebsocketHandler {
 
     void onOpen([[maybe_unused]] Request const& request, Websocket& ws) {
         auto g = std::lock_guard{mutex};
-        auto viewController = services.subscribe("services", [&ws](YAML::Node node) {
+        auto view = services.subscribe("services", [&ws](YAML::Node node) {
             YAML::Emitter emit;
             emit << node;
 
             ws.send(std::string{emit.c_str()});
         }, 0);
-        cndlUserData.try_emplace(&ws, std::move(viewController));
+        cndlUserData.try_emplace(&ws, std::move(view));
         fmt::print("new connection\n");
     }
 
@@ -77,13 +77,13 @@ struct CndlServices : Services<T> {
     CndlServices(cndl::Server& _cndlServer, std::string const& _resource)
         : wsroute   {std::regex{_resource}, handler}
     {
-        provideViewController("services", [&](T userData) {
-            return webcom::make<UserConnectionViewController<T>>(*this, std::move(userData));
+        provideView("services", [&](T userData) {
+            return webcom::make<UserConnectionView<T>>(*this, std::move(userData));
         });
         _cndlServer.getDispatcher().addRoute(wsroute);
     }
 
-    using Services<T>::provideViewController;
+    using Services<T>::provideView;
 };
 
 }

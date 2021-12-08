@@ -37,6 +37,54 @@ auto to_json_key(Key const& key) -> std::string {
     return "";
 }
 
+template <typename T>
+requires (std::is_same_v<T, __int128_t>
+         || std::is_same_v<T, __uint128_t>)
+auto to_string(T v) -> std::string {
+    if (v == 0) {
+        return "0";
+    }
+    bool sign = (v<0);
+
+    auto buffer = std::array<char, 40>{};
+    auto ptr = &buffer[39];
+    *ptr = '\0';
+    while (v != 0) {
+        *--ptr = '0' + std::abs(int(v % 10));
+        v = v / 10;
+    }
+    if (sign) {
+        --ptr;
+        *ptr = '-';
+    }
+    return std::string{ptr};
+}
+template <typename T>
+requires (std::is_same_v<T, __int128_t>
+         || std::is_same_v<T, __uint128_t>)
+auto from_string(std::string_view s) -> T {
+    T v{0};
+
+    if (s == "0") {
+        return v;
+    }
+    bool sign = false;
+    auto iter = s.begin();
+    auto end  = s.end();
+    if (*iter == '-') {
+        sign = true;
+        ++iter;
+    }
+    while (iter != end) {
+        v = v * 10 + (*iter - '0');
+        ++iter;
+    }
+    if (sign) {
+        v = -v;
+    }
+    return v;
+}
+
 
 template <typename T>
 auto serialize(T const& _input, Json::Value start = {}) -> Json::Value {
@@ -64,7 +112,22 @@ auto serialize(T const& _input, Json::Value start = {}) -> Json::Value {
         } else if constexpr (std::is_arithmetic_v<ValueT>
                       or std::is_same_v<std::string, ValueT>
                       or std::is_same_v<Json::Value, ValueT>) {
-            top = obj;
+            if constexpr (std::is_same_v<long long, ValueT>) {
+                []<bool flag = false>() { // convert long long to int64_t
+                    static_assert(sizeof(long long) == sizeof(int64_t), "long long and int64_t must have the same size");
+                }();
+                top = int64_t(obj);
+            } else if constexpr (std::is_same_v<unsigned long long, ValueT>) {
+                []<bool flag = false>() { // convert long long to int64_t
+                    static_assert(sizeof(unsigned long long) == sizeof(uint64_t), "unsigned long long and uint64_t must have the same size");
+                }();
+                top = uint64_t(obj);
+            } else if constexpr (std::is_same_v<__uint128_t, ValueT>
+                                 or std::is_same_v<__int128_t, ValueT>) {
+                top = to_string(obj);
+            } else {
+                top = obj;
+            }
         } else if constexpr (std::is_same_v<ValueT, std::string_view>
                             or std::is_same_v<ValueT, char const*>) {
             top = std::string{obj};
@@ -168,10 +231,21 @@ auto deserialize(Json::Value root) -> T {
                         throw std::runtime_error("value out of range");
                     }
                     obj = v;
-                } else if constexpr (std::is_same_v<ValueT, int64_t>) {
+                } else if constexpr (std::is_same_v<ValueT, int64_t>
+                                     or std::is_same_v<ValueT, long long>) {
+                    []<bool flag = false>() { // convert long long to int64_t
+                        static_assert(sizeof(long long) == sizeof(int64_t), "long long and int64_t must have the same size");
+                    }();
                     obj = top.asInt64();
-                } else if constexpr (std::is_same_v<ValueT, uint64_t>) {
+                } else if constexpr (std::is_same_v<ValueT, uint64_t>
+                                     or std::is_same_v<ValueT, unsigned long long>) {
+                    []<bool flag = false>() { // convert long long to int64_t
+                        static_assert(sizeof(unsigned long long) == sizeof(uint64_t), "unsigned long long and uint64_t must have the same size");
+                    }();
                     obj = top.asUInt64();
+                } else if constexpr (std::is_same_v<ValueT, __int128_t>
+                                     or std::is_same_v<ValueT, __uint128_t>) {
+                    obj = from_string<ValueT>(top.asString());
                 } else if constexpr (std::is_same_v<ValueT, float>) {
                     obj = top.asFloat();
                 } else if constexpr (std::is_same_v<ValueT, double>) {

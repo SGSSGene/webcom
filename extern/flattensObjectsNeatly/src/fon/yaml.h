@@ -43,6 +43,10 @@ auto serialize(T const& _input, YAML::Node start = {}) -> YAML::Node {
         if constexpr (std::is_same_v<ValueT, int8_t>
                     or std::is_same_v<ValueT, uint8_t>) {
             top = static_cast<int16_t>(obj);
+        } else if constexpr (std::is_same_v<ValueT, __int128_t>) {
+            top = static_cast<int64_t>(obj); //!TODO !Hacky
+        } else if constexpr (std::is_same_v<ValueT, __uint128_t>) {
+            top = static_cast<uint64_t>(obj); //!TODO !Hacky
         } else if constexpr (std::is_arithmetic_v<ValueT>
                       or std::is_same_v<std::string, ValueT>
                       or std::is_same_v<YAML::Node, ValueT>) {
@@ -147,6 +151,10 @@ auto deserialize(YAML::Node root) -> T {
                         throw std::runtime_error("value out of range");
                     }
                     obj = v;
+                } else if constexpr (std::is_same_v<ValueT, __int128_t>) {
+                    obj = top.as<int64_t>(); //!TODO Hacky
+                } else if constexpr (std::is_same_v<ValueT, __uint128_t>) {
+                    obj = top.as<uint64_t>(); //!TODO Hacky
                 } else {
                     // !TODO no check, we just hope it works
                     obj = top.template as<ValueT>();

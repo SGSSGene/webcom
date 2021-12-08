@@ -1,15 +1,15 @@
 #pragma once
 
+#include "GuardedType.h"
 #include "asFunction.h"
 
 #include <any>
+#include <fmt/format.h>
 #include <fon/json.h>
 #include <fon/std/all.h>
 #include <map>
 #include <string_view>
 #include <unordered_set>
-
-#include <fmt/format.h>
 
 namespace webcom {
 
@@ -53,9 +53,9 @@ struct View;
 template <typename T>
 struct Controller {
 private:
-    using ViewList   = std::unordered_set<T*>;
+    using ViewList = std::unordered_set<T*>;
 
-    ViewList   activeViews;
+    GuardedType<ViewList> activeViews;
 public:
     auto getViews() const -> auto const& {
         return activeViews;
@@ -81,7 +81,7 @@ private:
 
     void removeView(View<T>& view) {
         auto& t = static_cast<T&>(view);
-        activeViews.erase(&t);
+        activeViews->erase(&t);
     }
 public:
 
@@ -91,7 +91,7 @@ public:
         View<T>::gController = this;
         auto view = std::make_unique<T>(std::forward<Args>(args)...);
         auto ptr = view.get();
-        activeViews.insert(view.get());
+        activeViews->insert(view.get());
 
         return view;
     }
@@ -103,7 +103,8 @@ public:
         template <typename ...Args>
         void operator()(Args&&... _args) const {
             auto msg = detail::convertToMessage(actionName, std::forward<Args>(_args)...);
-            for (auto& _view : controller.getViews()) {
+            auto&& [guard, views] = *controller.getViews();
+            for (auto& _view : views) {
                 _view->sendData(msg);
             }
         }

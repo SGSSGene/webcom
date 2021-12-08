@@ -43,13 +43,15 @@ struct View : ViewBase {
         void operator()(Args&&... _args) const {
             auto msg = detail::convertToMessage(actionName, std::forward<Args>(_args)...);
             if (type == Type::All) {
-                for (auto& _view : view.controller.getViews()) {
+                auto&& [guard, views] = *view.controller.getViews();
+                for (auto& _view : views) {
                     _view->sendData(msg);
                 }
             } else if (type == Type::Back) {
                 view.sendData(msg);
             } else if (type == Type::Others) {
-                for (auto& _view : view.controller.getViews()) {
+                auto&& [guard, views] = *view.controller.getViews();
+                for (auto& _view : views) {
                     if (_view != &view) {
                         _view->sendData(msg);
                     }

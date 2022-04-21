@@ -1,4 +1,4 @@
-let connectWebcom = function(url, onClose) {
+let connectWebcom = function(url, onClose = function() {}) {
     let rObj = {};
 
     rObj.id = 0;

@@ -46,7 +46,7 @@ TEST_CASE("try controller", "[webcom][controller]") {
     auto chatController = webcom::Controller<ChatView>{};
 
     auto expectedMessagesToBeSend = std::vector<std::string>{
-R"({"action":"init","params":{"0":null}}
+R"({"action":"init","params":{"0":[]}}
 )",
 R"({"action":"addMsg","params":{"0":"uiae"}}
 )"};
@@ -83,7 +83,7 @@ TEST_CASE("try services", "[webcom][services]") {
 
 
     auto expectedMessagesToBeSend = std::vector<std::string>{
-R"({"action":"message","params":{"0":{"action":"init","id":0,"params":{"0":null}}}}
+R"({"action":"message","params":{"0":{"action":"init","id":0,"params":{"0":[]}}}}
 )",
 R"({"action":"message","params":{"0":{"action":"addMsg","id":0,"params":{"0":"uiae"}}}}
 )"};

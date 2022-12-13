@@ -50,7 +50,7 @@ int main(int argc, char const* const* argv) {
     });
 
     auto expectedMessagesToBeSend = std::vector<std::string>{
-R"({"action":"message","params":{"0":{"action":"init","id":0,"params":{"0":null}}}}
+R"({"action":"message","params":{"0":{"action":"init","id":0,"params":{"0":[]}}}}
 )",
 R"({"action":"message","params":{"0":{"action":"addMsg","id":0,"params":{"0":"uiae"}}}}
 )"};

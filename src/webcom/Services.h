@@ -4,6 +4,7 @@
 #include "GuardedType.h"
 #include "View.h"
 
+#include <cassert>
 #include <fmt/format.h>
 #include <unordered_map>
 
@@ -19,6 +20,7 @@ private:
 
 public:
     void addController(std::string_view _key, CB _cb) {
+        assert(_cb);
         auto&& [guard, list] = *controllerList;
         list.try_emplace(std::string{_key}, _cb);
     }

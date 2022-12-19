@@ -84,4 +84,5 @@ struct View : ViewBase {
         controller.dispatchSignalFromClient(*this, _node);
     }
 };
+
 }

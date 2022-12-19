@@ -8,33 +8,34 @@
 /**
  * A very simple chat....it is just a list with a lock
  **/
-using Chat = webcom::GuardedType<std::vector<std::string>>;
+struct Chat : webcom::GuardedType<std::vector<std::string>> {
 
-/** This represents the View (MVC) of a single User accessing the chat
- *
- * Each user (connection via websocket) will have its own view
- */
-struct ChatView : webcom::View<ChatView> {
-    Chat& chat;
+    /** This represents the View (MVC) of a single User accessing the chat
+     *
+     * Each user (connection via websocket) will have its own view
+     */
+    struct View : webcom::View<View> {
+        Chat& chat;
 
-    ChatView(Chat& _chat)
-        : chat{_chat}
-    {
-        auto&& [g, list] = *chat;
-        // call 'init' of only this client
-        callBack("init")(list);
-    }
+        View(Chat& _chat)
+            : chat{_chat}
+        {
+            auto&& [g, list] = *chat;
+            // call 'init' of only this client
+            callBack("init")(list);
+        }
 
-    static constexpr void reflect(auto& visitor) {
-        // function that can be called by the client (webbrowser)
-        visitor("addText", &ChatView::addText);
-    }
+        static constexpr void reflect(auto& visitor) {
+            // function that can be called by the client (webbrowser)
+            visitor("addText", &View::addText);
+        }
 
-    void addText(std::string str) {
-        chat->push_back(str);
-        // call 'addMsg' of all clients
-        callAll("addMsg")(str);
-    }
+        void addText(std::string str) {
+            chat->push_back(str);
+            // call 'addMsg' of all clients
+            callAll("addMsg")(str);
+        }
+    };
 };
 
 int main(int argc, char const* const* argv) {
@@ -43,11 +44,8 @@ int main(int argc, char const* const* argv) {
     Chat chat;
 
     auto userController = webcom::Controller<webcom::UserConnectionView>{};
-    auto chatController = webcom::Controller<ChatView>{};
 
-    services.addController("chat", [&](webcom::Services::SendCB _send) {
-        return chatController.makeView(std::move(_send), chat);
-    });
+    services.setController("chat", chat);
 
     auto expectedMessagesToBeSend = std::vector<std::string>{
 R"({"action":"message","params":{"0":{"action":"init","id":0,"params":{"0":[]}}}}

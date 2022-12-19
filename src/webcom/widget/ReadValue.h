@@ -7,20 +7,19 @@ namespace webcom::widget {
 
 // A value that can only be read by the front end
 template <typename T>
-using ReadValue = webcom::GuardedType<T>;
+struct ReadValue : webcom::GuardedType<T> {
+    struct View : webcom::View<View> {
+        ReadValue<T>& entity;
 
-template <typename T>
-struct ReadValueView : webcom::View<ReadValueView<T>> {
-    ReadValue<T>& entity;
+        View(ReadValue<T>& _entity)
+            : entity{_entity}
+        {
+            auto&& [g, value] = *entity;
+            // call 'init' of this client only
+            this->callBack("init")(value);
+        }
 
-    ReadValueView(ReadValue<T>& _entity)
-        : entity{_entity}
-    {
-        auto&& [g, value] = *entity;
-        // call 'init' of this client only
-        this->callBack("init")(value);
-    }
-
-    static constexpr void reflect(auto& visitor) {}
+        static constexpr void reflect(auto& visitor) {}
+    };
 };
 }

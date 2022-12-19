@@ -19,10 +19,18 @@ private:
     GuardedType<std::unordered_map<std::string, CB>> controllerList;
 
 public:
-    void addController(std::string_view _key, CB _cb) {
-        assert(_cb);
+    template <typename T, typename ...Args>
+        requires requires { typename T::View; }
+    auto setController(std::string_view _key, T& object, Args&&... args) {
+        auto controller = std::make_shared<Controller<typename T::View>>();
+        auto _cb = [&, controller](SendCB _send) {
+            return controller->makeView(std::move(_send), object, std::forward<Args>(args)...);
+        };
+
         auto&& [guard, list] = *controllerList;
         list.try_emplace(std::string{_key}, _cb);
+
+        return controller;
     }
 
     auto subscribe(std::string_view _serviceName, SendCB _send) -> std::unique_ptr<ViewBase> {

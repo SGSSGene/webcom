@@ -2,21 +2,19 @@
 
 #include "Controller.h"
 
-#include <any>
-
 namespace webcom {
 
 struct ViewBase {
     using SendData = std::function<void(Json::Value)>;
 
-    thread_local static inline SendData       gSendData;
+    thread_local static inline SendData gSendData;
     SendData sendData{std::move(gSendData)};
 
     virtual ~ViewBase() = default;
 
     virtual void dispatchSignalFromClient(Json::Value _node) = 0;
-
 };
+
 template <typename T>
 struct View : ViewBase {
     thread_local static inline Controller<T>* gController{};
@@ -61,7 +59,7 @@ struct View : ViewBase {
     };
 
     /**
-     * Call funciton _actionName on all remote peers
+     * Call function _actionName on all remote peers
      */
     auto callAll(std::string_view _actionName) const {
         return Call{Call::Type::All, *this, _actionName};
@@ -85,6 +83,5 @@ struct View : ViewBase {
     void dispatchSignalFromClient(Json::Value _node) override {
         controller.dispatchSignalFromClient(*this, _node);
     }
-
 };
 }

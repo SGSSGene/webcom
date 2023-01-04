@@ -85,4 +85,32 @@ struct View : ViewBase {
     }
 };
 
+template <typename T>
+struct ViewCollection : std::unordered_set<T*> {
+    struct Call {
+        std::unordered_set<T*> const& specificViews;
+        std::string_view actionName;
+
+        template <typename ...Args>
+        void operator()(Args&&... _args) const {
+            if (specificViews.empty()) return;
+
+            auto msg = detail::convertToMessage(actionName, std::forward<Args>(_args)...);
+            auto&& [guard, views] = *(*begin(specificViews))->controller.getViews();
+            for (auto& _view : specificViews) {
+                _view->sendData(msg);
+            }
+        }
+    };
+
+    /**
+     * Call function _actionName on all remote peers, but excluding the client
+     * associated with this View
+     */
+    auto call(std::string_view _actionName) const {
+        return Call{*this, _actionName};
+    }
+};
+
+
 }

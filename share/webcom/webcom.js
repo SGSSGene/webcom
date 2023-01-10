@@ -1,5 +1,14 @@
-let connectWebcom = function(url, onClose = function() {}) {
+let connectWebcom = function(url, _onClose) {
     let rObj = {};
+
+    let onClose = function() {
+        for (const [key, value] of Object.entries(rObj.dispatcher)) {
+            if (value.methods.onclose != null) {
+                value.methods.onclose();
+            }
+        }
+        _onClose();
+    }
 
     rObj.id = 0;
     rObj.ws = new WebSocket(url);
@@ -62,7 +71,6 @@ let connectWebcom = function(url, onClose = function() {}) {
         });
     };
     rObj.subscribe = function(serviceName) {
-
         let adapter = {};
         adapter.methods = {};
         adapter.id = rObj.id++;

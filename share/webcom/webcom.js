@@ -93,5 +93,8 @@ let connectWebcom = function(url, _onClose) {
         });
         return adapter;
     }
+    rObj.close = function() {
+        rObj.ws.close();
+    }
     return rObj;
 };

@@ -23,4 +23,4 @@ translationSets:
     language: c++
     dependencies:
       - webcom
-      - Catch2
+      - Catch2Main

@@ -54,7 +54,7 @@ int main(int argc, char const* const* argv) {
     auto readValueController = cndlServices.setController("readValue", readValue);
 
     auto readAndWriteValue = webcom::widget::ReadAndWriteValue<size_t>{};
-    cndlServices.setController("readandWriteValue", readAndWriteValue);
+    cndlServices.setController("readAndWriteValue", readAndWriteValue);
 
 
     auto t = std::thread{[&]() {

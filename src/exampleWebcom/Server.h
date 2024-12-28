@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2024 Simon Gene Gottlieb
+// SPDX-License-Identifier: AGPL-3.0-or-later
 #include <webcom/webcom.h>
 
 inline auto serveFile(std::filesystem::path file) -> cndl::OptResponse {

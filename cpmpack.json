@@ -1,0 +1,76 @@
+{
+  "format_version": "1",
+  "translationsets": [
+    {
+      "name": "webcom::webcom",
+      "type": "library",
+      "language": "cxx_std_20",
+      "dependencies": [
+        "fon::fon",
+        "cndl::cndl"
+      ]
+    },
+    {
+      "if": "PROJECT_IS_TOP_LEVEL",
+      "name": "testWebcom",
+      "type": "executable",
+      "language": "cxx_std_20",
+      "dependencies": [
+        "Catch2::Catch2WithMain",
+        "webcom::webcom",
+        "fmt::fmt"
+      ]
+    },
+    {
+      "if": "PROJECT_IS_TOP_LEVEL",
+      "name": "exampleWebcom",
+      "type": "executable",
+      "language": "cxx_std_20",
+      "dependencies": [
+        "Catch2::Catch2WithMain",
+        "webcom::webcom",
+        "fmt::fmt"
+      ]
+    },
+    {
+      "if": "PROJECT_IS_TOP_LEVEL",
+      "name": "exampleWebcom2",
+      "type": "executable",
+      "language": "cxx_std_20",
+      "dependencies": [
+        "Catch2::Catch2WithMain",
+        "webcom::webcom",
+        "fmt::fmt"
+      ]
+    }
+  ],
+  "packages": [
+    {
+      "name": "simplyfile",
+      "version": "1.3",
+      "github_repository": "SGSSGene/simplyfile"
+    },
+    {
+      "name": "cndl",
+      "version": "1.2.1",
+      "github_repository": "SGSSGene/cndl"
+    },
+    {
+      "name": "fon",
+      "version": "1.0.1",
+      "github_repository": "SGSSGene/flattensObjectsNeatly"
+    },
+    {
+      "name": "fmt",
+      "version": "11.0.2",
+      "github_repository": "fmtlib/fmt",
+      "git_tag": "{VERSION}"
+    },
+    {
+      "if": "PROJECT_IS_TOP_LEVEL",
+      "name": "Catch2",
+      "version": "3.7.1",
+      "github_repository": "catchorg/Catch2"
+    }
+  ]
+}

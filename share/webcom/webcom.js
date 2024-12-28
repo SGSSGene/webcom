@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2024 Simon Gene Gottlieb
+// SPDX-License-Identifier: AGPL-3.0-or-later
 let connectWebcom = function(url, _onClose) {
     let rObj = {};
 

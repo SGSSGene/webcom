@@ -2,10 +2,10 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 #pragma once
 
-#include "GuardedType.h"
 #include "asFunction.h"
 
 #include <any>
+#include <channel/value_mutex.h>
 #include <fmt/format.h>
 #include <fon/json.h>
 #include <fon/std/all.h>
@@ -57,7 +57,7 @@ struct Controller {
 private:
     using ViewList = std::unordered_set<T*>;
 
-    GuardedType<ViewList> activeViews;
+    channel::value_mutex<ViewList> activeViews;
 public:
     auto getViews() const -> auto const& {
         return activeViews;
@@ -106,7 +106,7 @@ public:
         void operator()(Args&&... _args) const {
             auto msg = detail::convertToMessage(actionName, std::forward<Args>(_args)...);
             auto&& [guard, views] = *controller.getViews();
-            for (auto& _view : views) {
+            for (auto& _view : *views) {
                 _view->sendData(msg);
             }
         }

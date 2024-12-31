@@ -2,18 +2,16 @@
 // SPDX-License-Identifier: CC0-1.0
 #include "Server.h"
 
-#include <webcom/widget/all.h>
-
+#include <chrono>
 #include <fmt/color.h>
 #include <fmt/format.h>
-
 #include <thread>
-#include <chrono>
+#include <webcom/widget/all.h>
 
 /**
  * A very simple chat....it is just a list with a lock
  **/
-struct Chat : webcom::GuardedType<std::vector<std::string>> {
+struct Chat : channel::value_mutex<std::vector<std::string>> {
 
     /** This represents the View (MVC) of a single User accessing the chat
      *
@@ -25,9 +23,9 @@ struct Chat : webcom::GuardedType<std::vector<std::string>> {
         View(Chat& _chat)
             : chat{_chat}
         {
-            auto&& [g, list] = *chat;
+            auto [g, list] = *chat;
             // call 'init' of only this client
-            callBack("init")(list);
+            callBack("init")(*list);
         }
 
         static constexpr void reflect(auto& visitor) {
@@ -64,8 +62,8 @@ int main(int argc, char const* const* argv) {
         while(true) {
             std::this_thread::sleep_for(std::chrono::milliseconds{100});
             auto&& [g, value] = *readValue;
-            value = ++x;
-            readValueController->callAll("setValue")(value);
+            *value = ++x;
+            readValueController->callAll("setValue")(*value);
         }
     }};
 

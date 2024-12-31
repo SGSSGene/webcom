@@ -7,7 +7,8 @@
       "language": "cxx_std_20",
       "dependencies": [
         "fon::fon",
-        "cndl::cndl"
+        "cndl::cndl",
+        "channel::channel"
       ]
     },
     {
@@ -59,6 +60,11 @@
       "name": "fon",
       "version": "1.0.1",
       "github_repository": "SGSSGene/flattensObjectsNeatly"
+    },
+    {
+      "name": "channel",
+      "version": "0.1.2",
+      "github_repository": "SGSSGene/channel"
     },
     {
       "name": "fmt",

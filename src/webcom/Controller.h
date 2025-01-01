@@ -97,24 +97,10 @@ public:
 
         return view;
     }
-
-    struct Call {
-        Controller const& controller;
-        std::string_view actionName;
-
-        template <typename ...Args>
-        void operator()(Args&&... _args) const {
-            auto msg = detail::convertToMessage(actionName, std::forward<Args>(_args)...);
-            auto&& [guard, views] = *controller.getViews();
-            for (auto& _view : *views) {
-                _view->sendData(msg);
-            }
-        }
-    };
-
-
-    auto callAll(std::string_view _actionName) const {
-        return Call{*this, _actionName};
+    template <typename ...Args>
+    auto makeView2(Args&&... args) -> std::unique_ptr<T> {
+        auto sendFunc = [](Json::Value) {};
+        return makeView(sendFunc, std::forward<Args>(args)...);
     }
 };
 

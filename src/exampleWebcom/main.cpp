@@ -63,7 +63,7 @@ int main(int argc, char const* const* argv) {
             std::this_thread::sleep_for(std::chrono::milliseconds{100});
             auto&& [g, value] = *readValue;
             *value = ++x;
-            readValueController->callAll("setValue")(*value);
+            readValueController->makeView2(readValue)->callOthers("setValue")(*value);
         }
     }};
 

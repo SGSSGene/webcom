@@ -45,7 +45,7 @@ int main(int argc, char const* const* argv) {
 
     Chat chat;
 
-    auto userController = webcom::Controller<webcom::UserConnectionView>{};
+    auto userController = webcom::Controller{};
 
     services.setController("chat", chat);
 

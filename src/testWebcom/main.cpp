@@ -44,7 +44,7 @@ struct Chat : channel::value_mutex<std::vector<std::string>> {
 TEST_CASE("try controller", "[webcom][controller]") {
     Chat chat;
 
-    auto chatController = webcom::Controller<Chat::View>{};
+    auto chatController = webcom::Controller{};
 
     auto expectedMessagesToBeSend = std::vector<std::string>{
 R"({"action":"init","params":{"0":[]}}
@@ -75,7 +75,7 @@ TEST_CASE("try services", "[webcom][services]") {
 
     Chat chat;
 
-    auto userController = webcom::Controller<webcom::UserConnectionView>{};
+    auto userController = webcom::Controller{};
     services.setController("chat", chat);
 
 

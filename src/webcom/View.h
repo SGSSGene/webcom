@@ -13,8 +13,7 @@ struct ViewBase {
 
     virtual ~ViewBase() = default;
 protected:
-    template <typename T>
-    void detachFromController(Controller<T>& controller) {
+    void detachFromController(Controller& controller) {
         controller.removeView(*this);
     }
 public:
@@ -27,8 +26,8 @@ public:
 
 template <typename TTT>
 struct View : ViewBase {
-    thread_local static inline Controller<TTT>* gController{};
-    Controller<TTT>& controller{*gController};
+    thread_local static inline Controller* gController{};
+    Controller& controller{*gController};
 
     View() {
         dispatchSignalFromClient = [this](Json::Value msg) {

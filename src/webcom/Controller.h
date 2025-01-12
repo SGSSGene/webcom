@@ -42,7 +42,6 @@ struct ViewBase;
 template <typename T>
 struct View;
 
-template <typename T>
 struct Controller {
 private:
     using ViewList = std::unordered_set<ViewBase*>;

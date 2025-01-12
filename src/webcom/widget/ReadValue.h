@@ -22,8 +22,6 @@ struct ReadValue : channel::value_mutex<T> {
             callBack("init", *value);
         }
 
-        static constexpr void reflect(auto& visitor) {}
-
         void setValue(T v) {
             auto [g, value] = *entity;
             *value = v;

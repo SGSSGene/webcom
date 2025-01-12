@@ -4,7 +4,7 @@
     {
       "name": "webcom::webcom",
       "type": "library",
-      "language": "cxx_std_20",
+      "language": "cxx_std_23",
       "dependencies": [
         "fon::fon",
         "cndl::cndl",

@@ -72,15 +72,23 @@ public:
 
             auto action = msg["action"].as<std::string>();
 
-            // calls the correct function from ::reflect
-            auto selector = detail::FunctionSelector{action, [&](auto func) {
-                using Params = typename signature_t<std::decay_t<decltype(func)>>::params_t;
-                auto paramsAsTuple = fon::json::deserialize<Params>(msg["params"]);
-                std::apply([&](auto&&... params) {
-                    (view.*func)(std::forward<decltype(params)>(params)...);
-                }, paramsAsTuple);
-            }};
-            TTT::reflect(selector);
+            if (auto iter = view.callablesFromClient.find(action); iter != view.callablesFromClient.end()) {
+                iter->second(msg["params"]);
+            } else {
+                // calls the correct function from ::reflect
+                auto selector = detail::FunctionSelector{action, [&](auto func) {
+                    using Params = typename signature_t<std::decay_t<decltype(func)>>::params_t;
+                    auto paramsAsTuple = fon::json::deserialize<Params>(msg["params"]);
+                    std::apply([&](auto&&... params) {
+                        (view.*func)(std::forward<decltype(params)>(params)...);
+                    }, paramsAsTuple);
+                }};
+                if constexpr (requires() {
+                    TTT::reflect(selector);
+                }) {
+                    TTT::reflect(selector);
+                }
+            }
         };
         activeViews->insert(ptr);
 

@@ -20,10 +20,7 @@ struct ReadAndWriteValue : channel::value_mutex<T> {
             auto [g, value] = *entity;
             // call 'init' of this client only
             callBack("init", *value);
-        }
-
-        static void reflect(auto& visitor) {
-            visitor("setValue", &View::setValue);
+            registerMethod("setValue", &View::setValue);
         }
 
         void setValue(T t) {

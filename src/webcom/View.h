@@ -16,6 +16,8 @@ struct View {
     std::function<void()> cleanup;
     std::function<channel::value_mutex<std::unordered_set<View*>> const&()> getViews;
 
+    std::unordered_map<std::string, std::function<void(Json::Value)>> callablesFromClient;
+
     View() = default;
     View(View const&) = delete;
     View(View&&) = delete;
@@ -26,6 +28,29 @@ struct View {
 
     auto operator=(View const&) -> View = delete;
     auto operator=(View&&) -> View = delete;
+
+    void registerMethod(std::string const& _methodName, auto func) {
+        callablesFromClient.emplace(_methodName, [this, func](Json::Value _parameters) {
+            using Params = typename signature_t<std::decay_t<decltype(func)>>::params_t;
+            auto paramsAsTuple = fon::json::deserialize<Params>(_parameters);
+            std::apply([&](auto&&... params) {
+                func(std::forward<decltype(params)>(params)...);
+            }, paramsAsTuple);
+        });
+    }
+    template <typename Self, typename ...Args>
+    void registerMethod(this Self& self, std::string const& _methodName, void (Self::*func)(Args...)) {
+        self.callablesFromClient.try_emplace(_methodName, [&self, func](Json::Value _parameters) {
+            using Params = std::tuple<Args...>;
+            auto paramsAsTuple = fon::json::deserialize<Params>(_parameters);
+            std::apply([&](auto&&... params) {
+                (self.*func)(std::forward<decltype(params)>(params)...);
+            }, paramsAsTuple);
+        });
+    }
+    void removeMethod(std::string const& _methodName) {
+        callablesFromClient.erase(_methodName);
+    }
 
     /**
      * Call function _methodName on all remote peers

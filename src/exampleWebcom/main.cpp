@@ -61,9 +61,11 @@ int main(int argc, char const* const* argv) {
         size_t x = {0};
         while(true) {
             std::this_thread::sleep_for(std::chrono::milliseconds{100});
-            auto&& [g, value] = *readValue;
-            *value = ++x;
-            readValueController->makeView2<webcom::widget::ReadValue<size_t>::View>(readValue)->callOthers("setValue")(*value);
+            {
+                auto&& [g, value] = *readValue;
+                *value = ++x;
+            }
+            readValueController->makeView2<webcom::widget::ReadValue<size_t>::View>(readValue)->callOthers("setValue")(x);
         }
     }};
 

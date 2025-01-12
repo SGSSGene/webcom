@@ -21,7 +21,7 @@ struct View : ViewBase {
     std::function<channel::value_mutex<std::unordered_set<ViewBase*>> const&()> getViews;
 
     View() {
-        dispatchSignalFromClient = [this](Json::Value msg) {
+/*        dispatchSignalFromClient = [this](Json::Value msg) {
             auto& view = static_cast<TTT&>(*this);
 
             auto action = msg["action"].as<std::string>();
@@ -35,7 +35,7 @@ struct View : ViewBase {
                 }, paramsAsTuple);
             }};
             TTT::reflect(selector);
-        };
+        };*/
     }
     View(View const&) = delete;
     View(View&&) = delete;

@@ -78,6 +78,21 @@ public:
         view->getViews = [this]() -> channel::value_mutex<std::unordered_set<ViewBase*>> const& {
             return getViews();
         };
+        view->dispatchSignalFromClient = [ptr](Json::Value msg) {
+            auto& view = *ptr;
+
+            auto action = msg["action"].as<std::string>();
+
+            // calls the correct function from ::reflect
+            auto selector = detail::FunctionSelector{action, [&](auto func) {
+                using Params = typename signature_t<std::decay_t<decltype(func)>>::params_t;
+                auto paramsAsTuple = fon::json::deserialize<Params>(msg["params"]);
+                std::apply([&](auto&&... params) {
+                    (view.*func)(std::forward<decltype(params)>(params)...);
+                }, paramsAsTuple);
+            }};
+            TTT::reflect(selector);
+        };
         activeViews->insert(ptr);
 
         return view;

@@ -16,7 +16,7 @@ struct Chat : channel::value_mutex<std::vector<std::string>> {
      *
      * Each user (connection via websocket) will have its own view
      */
-    struct View : webcom::View<View> {
+    struct View : webcom::View {
         Chat& chat;
 
         View(Chat& _chat)

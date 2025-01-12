@@ -11,7 +11,7 @@ namespace webcom::widget {
 // A value that can only be read by the front end
 template <typename T>
 struct ReadAndWriteValue : channel::value_mutex<T> {
-    struct View : webcom::View<View> {
+    struct View : webcom::View {
         ReadAndWriteValue<T>& entity;
 
         View(ReadAndWriteValue<T>& _entity)

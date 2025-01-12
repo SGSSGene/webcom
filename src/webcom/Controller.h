@@ -39,7 +39,6 @@ FunctionSelector(std::string_view, CB) -> FunctionSelector<CB>;
 
 struct ViewBase;
 
-template <typename T>
 struct View;
 
 template </*typename View, */typename TModel>
@@ -69,7 +68,7 @@ public:
 
     template <typename TTT, typename ...Args>
     auto makeView(std::function<void(Json::Value)> _sendData, Args&&... args) -> std::unique_ptr<TTT> {
-        View<TTT>::gSendData  = std::move(_sendData);
+        TTT::gSendData  = std::move(_sendData);
         auto view = std::make_unique<TTT>(std::forward<Args>(args)...);
         auto ptr = view.get();
         view->cleanup = [this, ptr]() {

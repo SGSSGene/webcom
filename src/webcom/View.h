@@ -15,28 +15,11 @@ struct ViewBase {
     std::function<void(Json::Value)> dispatchSignalFromClient;
 };
 
-template <typename TTT>
 struct View : ViewBase {
     std::function<void()> cleanup;
     std::function<channel::value_mutex<std::unordered_set<ViewBase*>> const&()> getViews;
 
-    View() {
-/*        dispatchSignalFromClient = [this](Json::Value msg) {
-            auto& view = static_cast<TTT&>(*this);
-
-            auto action = msg["action"].as<std::string>();
-
-            // calls the correct function from ::reflect
-            auto selector = detail::FunctionSelector{action, [&](auto func) {
-                using Params = typename signature_t<std::decay_t<decltype(func)>>::params_t;
-                auto paramsAsTuple = fon::json::deserialize<Params>(msg["params"]);
-                std::apply([&](auto&&... params) {
-                    (view.*func)(std::forward<decltype(params)>(params)...);
-                }, paramsAsTuple);
-            }};
-            TTT::reflect(selector);
-        };*/
-    }
+    View() = default;
     View(View const&) = delete;
     View(View&&) = delete;
 

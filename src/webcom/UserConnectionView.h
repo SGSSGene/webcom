@@ -38,7 +38,8 @@ struct UserConnectionView : View<UserConnectionView> {
     }
 
     void message(size_t id, Json::Value data) {
-        views.at(id)->dispatchSignalFromClient(data);
+        auto& ptr = views.at(id);
+        ptr->dispatchSignalFromClient(data);
     }
 };
 

@@ -12,22 +12,13 @@ struct ViewBase {
     SendData sendData{std::move(gSendData)};
 
     virtual ~ViewBase() = default;
-protected:
-    void detachFromController(Controller& controller) {
-        controller.removeView(*this);
-    }
-public:
-
-
     std::function<void(Json::Value)> dispatchSignalFromClient;
-
-//    virtual void dispatchSignalFromClient(Json::Value _node) = 0;
 };
 
 template <typename TTT>
 struct View : ViewBase {
-    thread_local static inline Controller* gController{};
-    Controller& controller{*gController};
+    std::function<void()> cleanup;
+    std::function<channel::value_mutex<std::unordered_set<ViewBase*>> const&()> getViews;
 
     View() {
         dispatchSignalFromClient = [this](Json::Value msg) {
@@ -50,7 +41,7 @@ struct View : ViewBase {
     View(View&&) = delete;
 
     virtual ~View() {
-        ViewBase::detachFromController(controller);
+        cleanup();
     }
 
     auto operator=(View const&) -> View = delete;
@@ -66,14 +57,14 @@ struct View : ViewBase {
         void operator()(Args&&... _args) const {
             auto msg = detail::convertToMessage(actionName, std::forward<Args>(_args)...);
             if (type == Type::All) {
-                auto [guard, views] = *view.controller.getViews();
+                auto [guard, views] = *view.getViews();
                 for (auto& _view : *views) {
                     _view->sendData(msg);
                 }
             } else if (type == Type::Back) {
                 view.sendData(msg);
             } else if (type == Type::Others) {
-                auto [guard, views] = *view.controller.getViews();
+                auto [guard, views] = *view.getViews();
                 for (auto& _view : *views) {
                     if (_view != &view) {
                         _view->sendData(msg);

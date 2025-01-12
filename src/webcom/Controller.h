@@ -42,6 +42,7 @@ struct ViewBase;
 template <typename T>
 struct View;
 
+template </*typename View, */typename TModel>
 struct Controller {
 private:
     using ViewList = std::unordered_set<ViewBase*>;
@@ -51,6 +52,13 @@ public:
     auto getViews() const -> auto const& {
         return activeViews;
     }
+
+    TModel model;
+
+    template <typename ...Args>
+    Controller(Args &&... _args)
+        : model{std::forward<Args>(_args)...}
+    {}
 
 private:
     friend class ViewBase;
@@ -62,10 +70,15 @@ public:
     template <typename TTT, typename ...Args>
     auto makeView(std::function<void(Json::Value)> _sendData, Args&&... args) -> std::unique_ptr<TTT> {
         View<TTT>::gSendData  = std::move(_sendData);
-        View<TTT>::gController = this;
         auto view = std::make_unique<TTT>(std::forward<Args>(args)...);
         auto ptr = view.get();
-        activeViews->insert(view.get());
+        view->cleanup = [this, ptr]() {
+            removeView(*ptr);
+        };
+        view->getViews = [this]() -> channel::value_mutex<std::unordered_set<ViewBase*>> const& {
+            return getViews();
+        };
+        activeViews->insert(ptr);
 
         return view;
     }

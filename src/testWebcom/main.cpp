@@ -75,7 +75,6 @@ TEST_CASE("try services", "[webcom][services]") {
 
     Chat chat;
 
-    auto userController = webcom::Controller<Chat&>{chat};
     services.setController("chat", chat);
 
     auto serviceController = webcom::Controller<webcom::Services&>{services};

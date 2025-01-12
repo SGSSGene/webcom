@@ -37,13 +37,15 @@ FunctionSelector(std::string_view, CB) -> FunctionSelector<CB>;
 }
 
 
+struct ViewBase;
+
 template <typename T>
 struct View;
 
-template <typename T>
+template <typename TTT>
 struct Controller {
 private:
-    using ViewList = std::unordered_set<T*>;
+    using ViewList = std::unordered_set<ViewBase*>;
 
     channel::value_mutex<ViewList> activeViews;
 public:
@@ -52,25 +54,24 @@ public:
     }
 
 private:
-    friend class View<T>;
-    void removeView(View<T>& view) {
-        auto& t = static_cast<T&>(view);
-        activeViews->erase(&t);
+    friend class ViewBase;
+    void removeView(ViewBase& view) {
+        activeViews->erase(&view);
     }
 public:
 
     template <typename ...Args>
-    auto makeView(std::function<void(Json::Value)> _sendData, Args&&... args) -> std::unique_ptr<T> {
-        View<T>::gSendData  = std::move(_sendData);
-        View<T>::gController = this;
-        auto view = std::make_unique<T>(std::forward<Args>(args)...);
+    auto makeView(std::function<void(Json::Value)> _sendData, Args&&... args) -> std::unique_ptr<TTT> {
+        View<TTT>::gSendData  = std::move(_sendData);
+        View<TTT>::gController = this;
+        auto view = std::make_unique<TTT>(std::forward<Args>(args)...);
         auto ptr = view.get();
         activeViews->insert(view.get());
 
         return view;
     }
     template <typename ...Args>
-    auto makeView2(Args&&... args) -> std::unique_ptr<T> {
+    auto makeView2(Args&&... args) -> std::unique_ptr<TTT> {
         auto sendFunc = [](Json::Value) {};
         return makeView(sendFunc, std::forward<Args>(args)...);
     }

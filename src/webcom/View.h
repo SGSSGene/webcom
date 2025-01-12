@@ -12,21 +12,46 @@ struct ViewBase {
     SendData sendData{std::move(gSendData)};
 
     virtual ~ViewBase() = default;
+protected:
+    template <typename T>
+    void detachFromController(Controller<T>& controller) {
+        controller.removeView(*this);
+    }
+public:
 
-    virtual void dispatchSignalFromClient(Json::Value _node) = 0;
+
+    std::function<void(Json::Value)> dispatchSignalFromClient;
+
+//    virtual void dispatchSignalFromClient(Json::Value _node) = 0;
 };
 
-template <typename T>
+template <typename TTT>
 struct View : ViewBase {
-    thread_local static inline Controller<T>* gController{};
-    Controller<T>& controller{*gController};
+    thread_local static inline Controller<TTT>* gController{};
+    Controller<TTT>& controller{*gController};
 
-    View() = default;
+    View() {
+        dispatchSignalFromClient = [this](Json::Value msg) {
+            auto& view = static_cast<TTT&>(*this);
+
+            auto action = msg["action"].as<std::string>();
+
+            // calls the correct function from ::reflect
+            auto selector = detail::FunctionSelector{action, [&](auto func) {
+                using Params = typename signature_t<std::decay_t<decltype(func)>>::params_t;
+                auto paramsAsTuple = fon::json::deserialize<Params>(msg["params"]);
+                std::apply([&](auto&&... params) {
+                    (view.*func)(std::forward<decltype(params)>(params)...);
+                }, paramsAsTuple);
+            }};
+            TTT::reflect(selector);
+        };
+    }
     View(View const&) = delete;
     View(View&&) = delete;
 
     virtual ~View() {
-        controller.removeView(*this);
+        ViewBase::detachFromController(controller);
     }
 
     auto operator=(View const&) -> View = delete;
@@ -79,22 +104,6 @@ struct View : ViewBase {
      */
     auto callOthers(std::string_view _actionName) const {
         return Call{Call::Type::Others, *this, _actionName};
-    }
-
-    void dispatchSignalFromClient(Json::Value msg) override {
-        auto& view = static_cast<T&>(*this);
-
-        auto action = msg["action"].as<std::string>();
-
-        // calls the correct function from ::reflect
-        auto selector = detail::FunctionSelector{action, [&](auto func) {
-            using Params = typename signature_t<std::decay_t<decltype(func)>>::params_t;
-            auto paramsAsTuple = fon::json::deserialize<Params>(msg["params"]);
-            std::apply([&](auto&&... params) {
-                (view.*func)(std::forward<decltype(params)>(params)...);
-            }, paramsAsTuple);
-        }};
-        T::reflect(selector);
     }
 };
 

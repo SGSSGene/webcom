@@ -42,7 +42,7 @@ struct ViewBase;
 template <typename T>
 struct View;
 
-template <typename TTT>
+template <typename T>
 struct Controller {
 private:
     using ViewList = std::unordered_set<ViewBase*>;
@@ -60,7 +60,7 @@ private:
     }
 public:
 
-    template <typename ...Args>
+    template <typename TTT, typename ...Args>
     auto makeView(std::function<void(Json::Value)> _sendData, Args&&... args) -> std::unique_ptr<TTT> {
         View<TTT>::gSendData  = std::move(_sendData);
         View<TTT>::gController = this;
@@ -70,10 +70,10 @@ public:
 
         return view;
     }
-    template <typename ...Args>
+    template <typename TTT, typename ...Args>
     auto makeView2(Args&&... args) -> std::unique_ptr<TTT> {
         auto sendFunc = [](Json::Value) {};
-        return makeView(sendFunc, std::forward<Args>(args)...);
+        return makeView<TTT>(sendFunc, std::forward<Args>(args)...);
     }
 };
 

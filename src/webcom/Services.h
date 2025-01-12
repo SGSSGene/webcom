@@ -26,7 +26,7 @@ public:
     auto setController(std::string_view _key, T& object, Args&&... args) {
         auto controller = std::make_shared<Controller<typename T::View>>();
         auto _cb = [&, controller](SendCB _send) {
-            return controller->makeView(std::move(_send), object, std::forward<Args>(args)...);
+            return controller->template makeView<typename T::View>(std::move(_send), object, std::forward<Args>(args)...);
         };
 
         auto [guard, list] = *controllerList;

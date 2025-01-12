@@ -65,7 +65,7 @@ int main(int argc, char const* const* argv) {
                 auto&& [g, value] = *readValue;
                 *value = ++x;
             }
-            readValueController->makeView2<webcom::widget::ReadValue<size_t>::View>(readValue)->callOthers("setValue")(x);
+            readValueController->makeView<webcom::widget::ReadValue<size_t>::View>()->callOthers("setValue")(x);
         }
     }};
 

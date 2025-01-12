@@ -58,7 +58,7 @@ R"({"action":"addMsg","params":{"0":"uiae"}}
 
         CHECK(expectedMessagesToBeSend[0] == actual);
         expectedMessagesToBeSend.erase(begin(expectedMessagesToBeSend));
-    }, chat);
+    });
 
     {
         auto msg = Json::Value{};
@@ -78,21 +78,21 @@ TEST_CASE("try services", "[webcom][services]") {
     auto userController = webcom::Controller<Chat&>{chat};
     services.setController("chat", chat);
 
-
+    auto serviceController = webcom::Controller<webcom::Services&>{services};
 
     auto expectedMessagesToBeSend = std::vector<std::string>{
 R"({"action":"message","params":{"0":{"action":"init","id":0,"params":{"0":[]}}}}
 )",
 R"({"action":"message","params":{"0":{"action":"addMsg","id":0,"params":{"0":"uiae"}}}}
 )"};
-    auto uv = userController.makeView<webcom::UserConnectionView>([&](Json::Value node) {
+    auto uv = serviceController.makeView<webcom::UserConnectionView>([&](Json::Value node) {
         auto actual = Json::FastWriter{}.write(node);
 
         REQUIRE(!expectedMessagesToBeSend.empty());
 
         CHECK(expectedMessagesToBeSend[0] == actual);
         expectedMessagesToBeSend.erase(begin(expectedMessagesToBeSend));
-    }, services);
+    });
 
     {
         auto msg = Json::Value{};

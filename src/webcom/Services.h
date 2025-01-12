@@ -21,12 +21,12 @@ private:
     channel::value_mutex<std::unordered_map<std::string, CB>> controllerList;
 
 public:
-    template <typename T, typename ...Args>
+    template <typename T>
         requires requires { typename T::View; }
-    auto setController(std::string_view _key, T& object, Args&&... args) {
+    auto setController(std::string_view _key, T& object) {
         auto controller = std::make_shared<Controller<T&>>(object);
         auto _cb = [&, controller](SendCB _send) {
-            return controller->template makeView<typename T::View>(std::move(_send), object, std::forward<Args>(args)...);
+            return controller->template makeView<typename T::View>(std::move(_send));
         };
 
         auto [guard, list] = *controllerList;

@@ -56,10 +56,10 @@ public:
         : model{std::forward<Args>(_args)...}
     {}
 
-    template <typename TTT, typename ...Args>
-    auto makeView(std::function<void(Json::Value)> _sendData, Args&&... args) -> std::unique_ptr<TTT> {
+    template <typename TTT>
+    auto makeView(std::function<void(Json::Value)> _sendData = [](Json::Value){}) -> std::unique_ptr<TTT> {
         TTT::gSendData  = std::move(_sendData);
-        auto view = std::make_unique<TTT>(std::forward<Args>(args)...);
+        auto view = std::make_unique<TTT>(model);
         auto ptr = view.get();
         view->cleanup = [this, ptr]() {
             activeViews->erase(ptr);
@@ -86,11 +86,7 @@ public:
 
         return view;
     }
-    template <typename TTT, typename ...Args>
-    auto makeView2(Args&&... args) -> std::unique_ptr<TTT> {
-        auto sendFunc = [](Json::Value) {};
-        return makeView<TTT>(sendFunc, std::forward<Args>(args)...);
-    }
+
 };
 
 }

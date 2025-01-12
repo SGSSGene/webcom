@@ -44,17 +44,18 @@ int main(int argc, char const* const* argv) {
     auto services = webcom::Services{};
 
     Chat chat;
-
     auto userController = webcom::Controller<Chat&>{chat};
 
     services.setController("chat", chat);
+
+    auto serviceController = webcom::Controller<webcom::Services&>{services};
 
     auto expectedMessagesToBeSend = std::vector<std::string>{
 R"({"action":"message","params":{"0":{"action":"init","id":0,"params":{"0":[]}}}}
 )",
 R"({"action":"message","params":{"0":{"action":"addMsg","id":0,"params":{"0":"uiae"}}}}
 )"};
-    auto uv = userController.makeView<webcom::UserConnectionView>([&](Json::Value node) {
+    auto uv = serviceController.makeView<webcom::UserConnectionView>([&](Json::Value node) {
         auto actual = Json::FastWriter{}.write(node);
 
         if (expectedMessagesToBeSend.empty()) {
@@ -67,7 +68,7 @@ R"({"action":"message","params":{"0":{"action":"addMsg","id":0,"params":{"0":"ui
             throw std::runtime_error("unexpected message");
         }
         expectedMessagesToBeSend.erase(begin(expectedMessagesToBeSend));
-    }, services);
+    });
 
     {
         auto msg = Json::Value{};

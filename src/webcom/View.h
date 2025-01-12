@@ -27,53 +27,40 @@ struct View {
     auto operator=(View const&) -> View = delete;
     auto operator=(View&&) -> View = delete;
 
-    struct Call {
-        enum class Type {All, Back, Others};
-        Type type;
-        View const& view;
-        std::string_view methodName;
-
-        template <typename ...Args>
-        void operator()(Args&&... _args) const {
-            auto msg = detail::convertToMessage(methodName, std::forward<Args>(_args)...);
-            if (type == Type::All) {
-                auto [guard, views] = *view.getViews();
-                for (auto& _view : *views) {
-                    _view->sendData(msg);
-                }
-            } else if (type == Type::Back) {
-                view.sendData(msg);
-            } else if (type == Type::Others) {
-                auto [guard, views] = *view.getViews();
-                for (auto& _view : *views) {
-                    if (_view != &view) {
-                        _view->sendData(msg);
-                    }
-                }
-            }
-        }
-    };
-
     /**
      * Call function _methodName on all remote peers
      */
-    auto callAll(std::string_view _methodName) const {
-        return Call{Call::Type::All, *this, _methodName};
+    template <typename ...Args>
+    auto callAll(std::string_view _methodName, Args&&... _args) const {
+        auto msg = detail::convertToMessage(_methodName, std::forward<Args>(_args)...);
+        auto [guard, views] = *getViews();
+        for (auto& _view : *views) {
+            _view->sendData(msg);
+        }
     }
 
     /**
      * Call function _methodName on the client associated with this View
      */
-    auto callBack(std::string_view _methodName) const {
-        return Call{Call::Type::Back, *this, _methodName};
+    template <typename ...Args>
+    auto callBack(std::string_view _methodName, Args&&... _args) const {
+        auto msg = detail::convertToMessage(_methodName, std::forward<Args>(_args)...);
+        sendData(msg);
     }
 
     /**
      * Call function _methodName on all remote peers, but excluding the client
      * associated with this View
      */
-    auto callOthers(std::string_view _methodName) const {
-        return Call{Call::Type::Others, *this, _methodName};
+    template <typename ...Args>
+    auto callOthers(std::string_view _methodName, Args&&... _args) const {
+        auto msg = detail::convertToMessage(_methodName, std::forward<Args>(_args)...);
+        auto [guard, views] = *getViews();
+        for (auto& _view : *views) {
+            if (_view != this) {
+                _view->sendData(msg);
+            }
+        }
     }
 };
 

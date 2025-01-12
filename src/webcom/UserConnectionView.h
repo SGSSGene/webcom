@@ -29,7 +29,7 @@ struct UserConnectionView : View {
     void subscribe(size_t _id, std::string _serviceName) {
         views.try_emplace(_id, services.subscribe(std::move(_serviceName), [this, _id](Json::Value _node) {
             _node["id"] = _id;
-            callBack("message")(_node);
+            callBack("message", _node);
         }));
     }
 

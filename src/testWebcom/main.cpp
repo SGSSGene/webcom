@@ -25,7 +25,7 @@ struct Chat : channel::value_mutex<std::vector<std::string>> {
         {
             auto [g, list] = *chat;
             // call 'init' of only this client
-            callBack("init")(*list);
+            callBack("init", *list);
         }
 
         static constexpr void reflect(auto& visitor) {
@@ -36,7 +36,7 @@ struct Chat : channel::value_mutex<std::vector<std::string>> {
         void addText(std::string str) {
             chat->push_back(str);
             // call 'addMsg' of all clients
-            callAll("addMsg")(str);
+            callAll("addMsg", str);
         }
     };
 };

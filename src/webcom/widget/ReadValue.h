@@ -19,7 +19,7 @@ struct ReadValue : channel::value_mutex<T> {
         {
             auto [g, value] = *entity;
             // call 'init' of this client only
-            callBack("init")(*value);
+            callBack("init", *value);
         }
 
         static constexpr void reflect(auto& visitor) {}
@@ -28,7 +28,7 @@ struct ReadValue : channel::value_mutex<T> {
             auto [g, value] = *entity;
             *value = v;
 
-            callAll("setValue")(v);
+            callAll("setValue", v);
         }
     };
 };

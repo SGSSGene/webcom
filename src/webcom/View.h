@@ -31,11 +31,11 @@ struct View {
         enum class Type {All, Back, Others};
         Type type;
         View const& view;
-        std::string_view actionName;
+        std::string_view methodName;
 
         template <typename ...Args>
         void operator()(Args&&... _args) const {
-            auto msg = detail::convertToMessage(actionName, std::forward<Args>(_args)...);
+            auto msg = detail::convertToMessage(methodName, std::forward<Args>(_args)...);
             if (type == Type::All) {
                 auto [guard, views] = *view.getViews();
                 for (auto& _view : *views) {
@@ -55,25 +55,25 @@ struct View {
     };
 
     /**
-     * Call function _actionName on all remote peers
+     * Call function _methodName on all remote peers
      */
-    auto callAll(std::string_view _actionName) const {
-        return Call{Call::Type::All, *this, _actionName};
+    auto callAll(std::string_view _methodName) const {
+        return Call{Call::Type::All, *this, _methodName};
     }
 
     /**
-     * Call function _actionName on the client associated with this View
+     * Call function _methodName on the client associated with this View
      */
-    auto callBack(std::string_view _actionName) const {
-        return Call{Call::Type::Back, *this, _actionName};
+    auto callBack(std::string_view _methodName) const {
+        return Call{Call::Type::Back, *this, _methodName};
     }
 
     /**
-     * Call function _actionName on all remote peers, but excluding the client
+     * Call function _methodName on all remote peers, but excluding the client
      * associated with this View
      */
-    auto callOthers(std::string_view _actionName) const {
-        return Call{Call::Type::Others, *this, _actionName};
+    auto callOthers(std::string_view _methodName) const {
+        return Call{Call::Type::Others, *this, _methodName};
     }
 };
 

@@ -76,9 +76,9 @@ let connectWebcom = function(url, _onClose) {
         let adapter = {};
         adapter.methods = {};
         adapter.id = rObj.id++;
-        adapter.call = function(actionName) {
+        adapter.call = function(methodName) {
             return function() {
-                send(adapter.id, actionName, ...arguments);
+                send(adapter.id, methodName, ...arguments);
             }
         };
         adapter.unsubscribe = function() {

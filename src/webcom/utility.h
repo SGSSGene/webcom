@@ -8,11 +8,11 @@
 
 namespace webcom::detail {
 
-// Converts the call '_actionName' with arguments '_args...' to a json object
+// Converts the call '_methodName' with arguments '_args...' to a json object
 template <typename ...Args>
-auto convertToMessage(std::string_view _actionName, Args&&... _args) -> Json::Value {
+auto convertToMessage(std::string_view _methodName, Args&&... _args) -> Json::Value {
     auto node = Json::Value{};
-    node["action"] = std::string{_actionName};
+    node["action"] = std::string{_methodName};
     node["params"] = fon::json::serialize(
                         std::tuple{std::forward<Args>(_args)...}
                      );

@@ -15,7 +15,7 @@ namespace webcom {
 class Services {
 public:
     using SendCB = std::function<void(Json::Value)>;
-    using CB     = std::function<std::unique_ptr<ViewBase>(SendCB)>;
+    using CB     = std::function<std::unique_ptr<View>(SendCB)>;
 
 private:
     channel::value_mutex<std::unordered_map<std::string, CB>> controllerList;
@@ -35,7 +35,7 @@ public:
         return controller;
     }
 
-    auto subscribe(std::string_view _serviceName, SendCB _send) -> std::unique_ptr<ViewBase> {
+    auto subscribe(std::string_view _serviceName, SendCB _send) -> std::unique_ptr<View> {
         auto [guard, list] = *controllerList;
 
         auto iter = list->find(std::string{_serviceName}); //!TODO how to make it work with std::string_view

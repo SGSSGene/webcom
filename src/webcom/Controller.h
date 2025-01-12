@@ -36,15 +36,12 @@ FunctionSelector(std::string_view, CB) -> FunctionSelector<CB>;
 
 }
 
-
-struct ViewBase;
-
 struct View;
 
 template </*typename View, */typename TModel>
 struct Controller {
 private:
-    using ViewList = std::unordered_set<ViewBase*>;
+    using ViewList = std::unordered_set<View*>;
 
     channel::value_mutex<ViewList> activeViews;
 public:
@@ -59,22 +56,15 @@ public:
         : model{std::forward<Args>(_args)...}
     {}
 
-private:
-    friend class ViewBase;
-    void removeView(ViewBase& view) {
-        activeViews->erase(&view);
-    }
-public:
-
     template <typename TTT, typename ...Args>
     auto makeView(std::function<void(Json::Value)> _sendData, Args&&... args) -> std::unique_ptr<TTT> {
         TTT::gSendData  = std::move(_sendData);
         auto view = std::make_unique<TTT>(std::forward<Args>(args)...);
         auto ptr = view.get();
         view->cleanup = [this, ptr]() {
-            removeView(*ptr);
+            activeViews->erase(ptr);
         };
-        view->getViews = [this]() -> channel::value_mutex<std::unordered_set<ViewBase*>> const& {
+        view->getViews = [this]() -> channel::value_mutex<std::unordered_set<View*>> const& {
             return getViews();
         };
         view->dispatchSignalFromClient = [ptr](Json::Value msg) {

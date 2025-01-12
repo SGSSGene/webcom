@@ -6,18 +6,15 @@
 
 namespace webcom {
 
-struct ViewBase {
+struct View {
     using SendData = std::function<void(Json::Value)>;
     thread_local static inline SendData gSendData;
     SendData sendData{std::move(gSendData)};
 
-    virtual ~ViewBase() = default;
     std::function<void(Json::Value)> dispatchSignalFromClient;
-};
 
-struct View : ViewBase {
     std::function<void()> cleanup;
-    std::function<channel::value_mutex<std::unordered_set<ViewBase*>> const&()> getViews;
+    std::function<channel::value_mutex<std::unordered_set<View*>> const&()> getViews;
 
     View() = default;
     View(View const&) = delete;

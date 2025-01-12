@@ -35,6 +35,21 @@ public:
         return controller;
     }
 
+    template <typename Model, typename View = typename Model::View, typename ...Args>
+    auto addController(std::string_view _key, Args&&... args) {
+        auto controller = std::make_shared<Controller<Model>>(std::forward<Args>(args)...);
+        auto _cb = [&, controller](SendCB _send) {
+            return controller->template makeView<View>(std::move(_send));
+        };
+
+        auto [guard, list] = *controllerList;
+        list->try_emplace(std::string{_key}, _cb);
+
+        return controller;
+    }
+
+
+
     auto subscribe(std::string_view _serviceName, SendCB _send) -> std::unique_ptr<View> {
         auto [guard, list] = *controllerList;
 

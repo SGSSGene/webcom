@@ -47,14 +47,9 @@ int main(int argc, char const* const* argv) {
     // Some magic container providing the web server
     auto cndlServices = webcom::CndlServices{server.cndlServer, "/ws"};
 
-    Chat chat;
-    cndlServices.setController("chat", chat);
-
-    auto readValue = webcom::widget::ReadValue<size_t>{};
-    auto readValueController = cndlServices.setController("readValue", readValue);
-
-    auto readAndWriteValue = webcom::widget::ReadAndWriteValue<size_t>{};
-    cndlServices.setController("readAndWriteValue", readAndWriteValue);
+    cndlServices.addController<Chat, Chat::View>("chat");
+    auto readValueController = cndlServices.addController<webcom::widget::ReadValue<size_t>>("readValue");
+    cndlServices.addController<webcom::widget::ReadAndWriteValue<size_t>>("readAndWriteValue");
 
 
     auto t = std::thread{[&]() {

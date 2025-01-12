@@ -8,7 +8,6 @@ namespace webcom {
 
 struct ViewBase {
     using SendData = std::function<void(Json::Value)>;
-
     thread_local static inline SendData gSendData;
     SendData sendData{std::move(gSendData)};
 
@@ -82,8 +81,20 @@ struct View : ViewBase {
         return Call{Call::Type::Others, *this, _actionName};
     }
 
-    void dispatchSignalFromClient(Json::Value _node) override {
-        controller.dispatchSignalFromClient(*this, _node);
+    void dispatchSignalFromClient(Json::Value msg) override {
+        auto& view = static_cast<T&>(*this);
+
+        auto action = msg["action"].as<std::string>();
+
+        // calls the correct function from ::reflect
+        auto selector = detail::FunctionSelector{action, [&](auto func) {
+            using Params = typename signature_t<std::decay_t<decltype(func)>>::params_t;
+            auto paramsAsTuple = fon::json::deserialize<Params>(msg["params"]);
+            std::apply([&](auto&&... params) {
+                (view.*func)(std::forward<decltype(params)>(params)...);
+            }, paramsAsTuple);
+        }};
+        T::reflect(selector);
     }
 };
 

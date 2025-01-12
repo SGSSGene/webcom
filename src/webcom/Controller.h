@@ -3,6 +3,7 @@
 #pragma once
 
 #include "asFunction.h"
+#include "utility.h"
 
 #include <any>
 #include <channel/value_mutex.h>
@@ -33,19 +34,6 @@ struct FunctionSelector {
 template <typename CB>
 FunctionSelector(std::string_view, CB) -> FunctionSelector<CB>;
 
-template <typename ...Args>
-auto to_json(Args&&...args) -> Json::Value {
-    return fon::json::serialize<std::tuple<std::decay_t<Args>...>>(std::tuple{std::forward<Args>(args)...});
-}
-
-template <typename ...Args>
-auto convertToMessage(std::string_view _actionName, Args&&... _args) -> Json::Value {
-    auto node = Json::Value{};
-    node["action"]  = std::string{_actionName};
-    node["params"]  = to_json(std::forward<Args>(_args)...);
-
-    return node;
-}
 }
 
 
@@ -65,22 +53,6 @@ public:
 
 private:
     friend class View<T>;
-    void dispatchSignalFromClient(View<T>& _view, Json::Value msg) {
-        auto& view = static_cast<T&>(_view);
-
-        auto action = msg["action"].as<std::string>();
-
-        // calls the correct function from ::reflect
-        auto selector = detail::FunctionSelector{action, [&](auto func) {
-            using Params = typename signature_t<std::decay_t<decltype(func)>>::params_t;
-            auto paramsAsTuple = fon::json::deserialize<Params>(msg["params"]);
-            std::apply([&](auto&&... params) {
-                (view.*func)(std::forward<decltype(params)>(params)...);
-            }, paramsAsTuple);
-        }};
-        T::reflect(selector);
-    }
-
     void removeView(View<T>& view) {
         auto& t = static_cast<T&>(view);
         activeViews->erase(&t);

@@ -58,9 +58,8 @@
     },
     {
       "name": "channel",
-      "version": "0.2.0",
+      "version": "0.2.1",
       "github_repository": "SGSSGene/channel",
-      "git_tag": "37eef2c464c1d5e17e272408188002aa5d1e6a60",
     },
     {
       "name": "fmt",

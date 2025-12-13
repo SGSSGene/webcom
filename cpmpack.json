@@ -1,74 +1,86 @@
 {
   "format_version": "1",
+  "options": [
+    {
+        "name": "WEBCOM_BUILD_TEST",
+        "description": "build tests for this project",
+        "default": "${PROJECT_IS_TOP_LEVEL}"
+    },
+    {
+        "name": "WEBCOM_BUILD_DEMO",
+        "description": "build demonstrators for this project",
+        "default": "${PROJECT_IS_TOP_LEVEL}"
+    },
+  ],
   "translationsets": [
     {
       "name": "webcom::webcom",
       "type": "library",
+      "test_header": true,
       "language": "cxx_std_23",
       "dependencies": [
-        "$<BUILD_INTERFACE:fon::fon>",
-        "$<BUILD_INTERFACE:cndl::cndl>",
-        "channel::channel"
+        "fon::fon",
+        "cndl::cndl",
+        "channel::channel",
+        "fmt::fmt",
       ]
     },
     {
-      "if": "PROJECT_IS_TOP_LEVEL",
+      "if": "WEBCOM_BUILD_TEST",
       "name": "testWebcom",
       "type": "executable",
-      "language": "cxx_std_20",
+      "test": true,
       "dependencies": [
         "Catch2::Catch2WithMain",
         "webcom::webcom",
-        "fmt::fmt"
       ]
     },
     {
-      "if": "PROJECT_IS_TOP_LEVEL",
+      "if": "WEBCOM_BUILD_DEMO",
       "name": "exampleWebcom",
       "type": "executable",
-      "language": "cxx_std_20",
       "dependencies": [
         "Catch2::Catch2WithMain",
         "webcom::webcom",
-        "fmt::fmt"
       ]
     },
     {
-      "if": "PROJECT_IS_TOP_LEVEL",
+      "if": "WEBCOM_BUILD_DEMO",
       "name": "exampleWebcom2",
       "type": "executable",
-      "language": "cxx_std_20",
       "dependencies": [
         "Catch2::Catch2WithMain",
         "webcom::webcom",
-        "fmt::fmt"
       ]
     }
   ],
   "packages": [
     {
       "name": "cndl",
-      "version": "1.2.2",
+      "version": "1.2.3",
       "github_repository": "SGSSGene/cndl"
     },
     {
       "name": "fon",
-      "version": "1.0.2",
+      "version": "1.1.1",
       "github_repository": "SGSSGene/flattensObjectsNeatly"
     },
     {
       "name": "channel",
-      "version": "0.2.1",
+      "version": "0.2.2",
       "github_repository": "SGSSGene/channel",
     },
     {
       "name": "fmt",
       "version": "12.0.0",
       "github_repository": "fmtlib/fmt",
-      "git_tag": "{VERSION}"
+      "git_tag": "{VERSION}",
+      "options": [
+        "FMT_INSTALL ON",
+      ]
     },
     {
-      "if": "PROJECT_IS_TOP_LEVEL",
+      "if": "WEBCOM_BUILD_TEST",
       "name": "Catch2",
       "version": "3.11.0",
       "github_repository": "catchorg/Catch2"

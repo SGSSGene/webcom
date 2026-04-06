@@ -57,7 +57,7 @@
   "packages": [
     {
       "name": "cndl",
-      "version": "1.2.3",
+      "version": "1.2.4",
       "github_repository": "SGSSGene/cndl"
     },
     {

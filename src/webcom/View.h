@@ -8,22 +8,31 @@ namespace webcom {
 
 struct View {
     using SendData = std::function<void(Json::Value)>;
-    thread_local static inline SendData gSendData;
-    SendData sendData{std::move(gSendData)};
+    using ViewList = std::unordered_set<View*>;
 
-    std::function<void(Json::Value)> dispatchSignalFromClient;
+    // By passing constructor function for easier implementation
+    struct CTor {
+        SendData sendData;
+        channel::value_mutex<ViewList>* activeViews;
 
-    std::function<void()> cleanup;
-    std::function<channel::value_mutex<std::unordered_set<View*>> const&()> getViews;
+    };
+    thread_local static inline CTor gCTor;
 
-    std::unordered_map<std::string, std::function<void(Json::Value)>> callablesFromClient;
+    // function to send  data to client
+    SendData sendData{std::move(gCTor.sendData)};
+
+    // list of views to controller/model
+    channel::value_mutex<ViewList>& activeViews{*gCTor.activeViews};
+
+    using Callable = std::function<void(Json::Value)>;
+    std::unordered_map<std::string, Callable> callablesFromClient;
 
     View() = default;
     View(View const&) = delete;
     View(View&&) = delete;
 
     virtual ~View() {
-        cleanup();
+        (*activeViews)->erase(this);
     }
 
     auto operator=(View const&) -> View = delete;
@@ -58,7 +67,7 @@ struct View {
     template <typename ...Args>
     auto callAll(std::string_view _methodName, Args&&... _args) const {
         auto msg = detail::convertToMessage(_methodName, std::forward<Args>(_args)...);
-        auto [guard, views] = *getViews();
+        auto [guard, views] = *activeViews;
         for (auto& _view : *views) {
             _view->sendData(msg);
         }
@@ -80,11 +89,23 @@ struct View {
     template <typename ...Args>
     auto callOthers(std::string_view _methodName, Args&&... _args) const {
         auto msg = detail::convertToMessage(_methodName, std::forward<Args>(_args)...);
-        auto [guard, views] = *getViews();
+        auto [guard, views] = *activeViews;
         for (auto& _view : *views) {
             if (_view != this) {
                 _view->sendData(msg);
             }
+        }
+    }
+
+    /**
+     * Dispatches the signal given by msg to the correct method from the view
+     */
+    void dispatchSignalFromClient(Json::Value msg) {
+        auto action = msg["action"].as<std::string>();
+        if (auto iter = callablesFromClient.find(action); iter != callablesFromClient.end()) {
+            iter->second(msg["params"]);
+        } else {
+            throw std::runtime_error{"client called invalid function"};
         }
     }
 };

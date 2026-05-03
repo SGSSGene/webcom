@@ -23,14 +23,12 @@ struct Chat : channel::value_mutex<std::vector<std::string>> {
         View(Chat& _chat)
             : chat{_chat}
         {
+            // function that can be called by the client (webbrowser)
+            registerMethod("addText", &View::addText);
+
             auto [g, list] = *chat;
             // call 'init' of only this client
             callBack("init", *list);
-        }
-
-        static constexpr void reflect(auto& visitor) {
-            // function that can be called by the client (webbrowser)
-            visitor("addText", &View::addText);
         }
 
         void addText(std::string str) {
@@ -47,10 +45,9 @@ int main(int argc, char const* const* argv) {
     // Some magic container providing the web server
     auto cndlServices = webcom::CndlServices{server.cndlServer, "/ws"};
 
-    cndlServices.addController<Chat, Chat::View>("chat");
+    auto chatController = cndlServices.addController<Chat, Chat::View>("chat");
     auto readValueController = cndlServices.addController<webcom::widget::ReadValue<size_t>>("readValue");
     cndlServices.addController<webcom::widget::ReadAndWriteValue<size_t>>("readAndWriteValue");
-
 
     auto t = std::thread{[&]() {
         size_t x = {0};

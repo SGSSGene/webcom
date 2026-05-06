@@ -16,29 +16,9 @@
 
 namespace webcom {
 
-namespace detail {
-
-template <typename CB>
-struct FunctionSelector {
-    std::string_view name;
-    CB cb;
-
-    template <typename F>
-    void operator()(std::string_view action, F func) {
-        if (name == action) {
-            cb(func);
-        }
-    }
-};
-
-template <typename CB>
-FunctionSelector(std::string_view, CB) -> FunctionSelector<CB>;
-
-}
-
 struct View;
 
-template <typename TModel>
+template <typename TModel, typename TView = std::remove_cvref_t<TModel>::View>
 struct Controller {
 private:
     using ViewList = std::unordered_set<View*>;
@@ -48,6 +28,11 @@ private:
 
     // The actual underlying used model
     TModel model;
+
+    // a view that does not send anything out
+    std::unique_ptr<TView> view = makeView([](Json::Value){});
+
+
 public:
     // Construction of the controller and
     // the underlying model
@@ -57,8 +42,7 @@ public:
     {}
 
     // Create a view onto this object
-    template <typename TView>
-    auto makeView(std::function<void(Json::Value)> _sendData = [](Json::Value){}) -> std::unique_ptr<TView> {
+    auto makeView(std::function<void(Json::Value)> _sendData) -> std::unique_ptr<TView> {
         TView::gCTor = {
             .sendData    = std::move(_sendData),
             .activeViews = &activeViews,
@@ -81,6 +65,13 @@ public:
         activeViews->insert(view.get());
 
         return view;
+    }
+
+    auto operator*(this auto&& self) -> auto& {
+        return *self.view.get();
+    }
+    auto operator->(this auto&& self) {
+        return self.view.get();
     }
 };
 

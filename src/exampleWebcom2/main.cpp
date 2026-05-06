@@ -53,7 +53,7 @@ R"({"action":"message","params":{"0":{"action":"init","id":0,"params":{"0":[]}}}
 )",
 R"({"action":"message","params":{"0":{"action":"addMsg","id":0,"params":{"0":"uiae"}}}}
 )"};
-    auto uv = serviceController.makeView<webcom::UserConnectionView>([&](Json::Value node) {
+    auto uv = serviceController.makeView([&](Json::Value node) {
         auto actual = Json::FastWriter{}.write(node);
 
         if (expectedMessagesToBeSend.empty()) {

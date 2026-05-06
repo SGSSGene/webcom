@@ -45,20 +45,24 @@ int main(int argc, char const* const* argv) {
     // Some magic container providing the web server
     auto cndlServices = webcom::CndlServices{server.cndlServer, "/ws"};
 
-    auto chatController = cndlServices.makeController<Chat, Chat::View>("chat");
-    auto readValueController = cndlServices.makeController<webcom::widget::ReadValue<size_t>>("readValue");
-    cndlServices.makeController<webcom::widget::ReadAndWriteValue<size_t>>("readAndWriteValue");
+    auto chatController              = webcom::Controller<Chat>{};
+    auto readValueController         = webcom::Controller<webcom::widget::ReadValue<size_t>>{};
+    auto readAndWriteValueController = webcom::Controller<webcom::widget::ReadAndWriteValue<size_t>>{};
+
+    cndlServices.registerController("chat", chatController);
+    cndlServices.registerController("readValue", readValueController);
+    cndlServices.registerController("readAndWriteValue", readAndWriteValueController);
 
     auto t = std::thread{[&]() {
         size_t x = {0};
-        auto serverView = readValueController->makeView<webcom::widget::ReadValue<size_t>::View>();
 
         while(true) {
             std::this_thread::sleep_for(std::chrono::milliseconds{100});
-            serverView->setValue(++x);
+            readValueController->setValue(++x);
         }
     }};
-
-
     server.run();
+    cndlServices.removeController("chat");
+    cndlServices.removeController("readValue");
+    cndlServices.removeController("readAndWriteValue");
 }

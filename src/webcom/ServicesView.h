@@ -11,19 +11,19 @@
 
 namespace webcom {
 
-struct UserConnectionView : View {
+struct ServicesView : View {
     Services& services;
     std::unordered_map<size_t, std::unique_ptr<View>> views;
 
-    UserConnectionView(Services& _services)
+    ServicesView(Services& _services)
         : services{_services}
     {}
 
     static constexpr void reflect(auto& visitor) {
         // function that can be called by the client (webbrowser)
-        visitor("subscribe",   &UserConnectionView::subscribe);
-        visitor("unsubscribe", &UserConnectionView::unsubscribe);
-        visitor("message",     &UserConnectionView::message);
+        visitor("subscribe",   &ServicesView::subscribe);
+        visitor("unsubscribe", &ServicesView::unsubscribe);
+        visitor("message",     &ServicesView::message);
     }
 
     void subscribe(size_t _id, std::string _serviceName) {

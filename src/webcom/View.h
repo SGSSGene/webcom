@@ -18,7 +18,7 @@ struct View {
     };
     thread_local static inline CTor gCTor;
 
-    // function to send  data to client
+    // function to send data to client
     SendData sendData{std::move(gCTor.sendData)};
 
     // list of views to controller/model

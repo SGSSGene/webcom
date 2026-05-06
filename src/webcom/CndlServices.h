@@ -3,7 +3,6 @@
 #pragma once
 
 #include "Services.h"
-#include "UserConnectionView.h"
 
 #include <cndl/Route.h>
 #include <cndl/Server.h>
@@ -71,15 +70,12 @@ struct WebSocketHandler : cndl::WebsocketHandler {
 
 
 struct CndlServices : Services {
-    using View = webcom::UserConnectionView;
-
     WebSocketHandler handler{*this};
     cndl::WSRoute<WebSocketHandler> wsroute;
 
     CndlServices(cndl::Server& _cndlServer, std::string const& _resource)
         : wsroute   {std::regex{_resource}, handler}
     {
-        registerController("services", *this);
         _cndlServer.getDispatcher().addRoute(wsroute);
     }
 };

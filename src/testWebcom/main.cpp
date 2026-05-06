@@ -73,7 +73,7 @@ R"({"action":"addMsg","params":{"0":"uiae"}}
 TEST_CASE("try services", "[webcom][services]") {
     auto services = webcom::Services{};
 
-    services.addController<Chat>("chat");
+    services.makeController<Chat>("chat");
 
     auto serviceController = webcom::Controller<webcom::Services&>{services};
 

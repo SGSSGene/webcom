@@ -79,7 +79,7 @@ struct CndlServices : Services {
     CndlServices(cndl::Server& _cndlServer, std::string const& _resource)
         : wsroute   {std::regex{_resource}, handler}
     {
-        setController("services", *this);
+        registerController("services", *this);
         _cndlServer.getDispatcher().addRoute(wsroute);
     }
 };

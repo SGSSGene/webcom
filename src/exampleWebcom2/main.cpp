@@ -44,7 +44,7 @@ int main(int argc, char const* const* argv) {
     auto services = webcom::Services{};
 
     Chat chat;
-    services.setController("chat", chat);
+    services.registerController("chat", chat);
 
     auto serviceController = webcom::Controller<webcom::Services&>{services};
 

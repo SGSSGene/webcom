@@ -32,7 +32,7 @@ struct View {
     View(View&&) = delete;
 
     virtual ~View() {
-        (*activeViews)->erase(this);
+        activeViews->erase(this);
     }
 
     auto operator=(View const&) -> View = delete;

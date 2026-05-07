@@ -36,8 +36,12 @@ let connectWebcom = function(url, _onClose) {
             }
             if (id in rObj.dispatcher) {
                 let methods = rObj.dispatcher[id].methods;
-                if (action in methods) {
+                if (action == '__ctor') {
+                    rObj.dispatcher[id].__ctor(...params);
+                } else if (action in methods) {
                     methods[action](...params);
+                } else {
+                    console.log("illegal method: " + action);
                 }
             }
         }
@@ -76,14 +80,18 @@ let connectWebcom = function(url, _onClose) {
     };
     rObj.subscribe = function(serviceName) {
         let adapter = {};
-        adapter.methods = { __ctor: function(methodNames) {
+        adapter.methods = {};
+        adapter.__ctor = function(methodNames) {
             adapter.call = {};
             for (let n of methodNames) {
                 adapter.call[n] = function() {
                     send(adapter.id, n, ...arguments);
                 };
             }
-        }};
+            if (adapter.methods.__ctor) {
+                adapter.methods.__ctor();
+            }
+        };
         adapter.id = rObj.id++;
         adapter.unsubscribe = function() {
             sendRaw({

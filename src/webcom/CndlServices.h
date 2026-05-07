@@ -35,7 +35,8 @@ struct WebSocketHandler : cndl::WebsocketHandler {
     void onOpen([[maybe_unused]] Request const& request, Websocket& ws) {
         auto g = std::lock_guard{mutex};
         auto view = services.subscribe("services", [&ws](Json::Value node) {
-            ws.send(Json::FastWriter{}.write(node));
+            auto msg = Json::FastWriter{}.write(node);
+            ws.send(msg);
         });
         cndlUserData.try_emplace(&ws, std::move(view));
         fmt::print("new connection\n");

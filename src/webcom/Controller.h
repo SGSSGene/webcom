@@ -2,10 +2,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 #pragma once
 
-#include "asFunction.h"
-#include "utility.h"
+#include "View.h"
 
-#include <any>
 #include <channel/value_mutex.h>
 #include <fmt/format.h>
 #include <fon/json.h>
@@ -49,6 +47,7 @@ public:
     auto makeView(std::function<void(Json::Value)> _sendData) -> std::unique_ptr<View> override {
         return makeViewT(std::move(_sendData));
     }
+
     // Create a view onto this object
     auto makeViewT(std::function<void(Json::Value)> _sendData) -> std::unique_ptr<TView> {
         TView::gCTor = {
@@ -70,7 +69,7 @@ public:
                 TView::reflect(cb);
             }
         }
-        view->init();
+        static_cast<View*>(view.get())->init();
         activeViews->insert(view.get());
 
         return view;

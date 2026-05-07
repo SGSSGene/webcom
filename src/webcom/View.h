@@ -2,7 +2,12 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 #pragma once
 
-#include "Controller.h"
+#include "utility.h"
+
+#include <functional>
+#include <channel/channel.h>
+#include <fon/json.h>
+#include <fon/std/all.h>
 
 namespace webcom {
 

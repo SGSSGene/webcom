@@ -9,7 +9,9 @@ let connectWebcom = function(url, _onClose) {
                 value.methods.onclose();
             }
         }
-        _onClose();
+        if (_onClose) {
+            _onClose();
+        }
     }
 
     rObj.id = 0;

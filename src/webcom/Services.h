@@ -23,7 +23,7 @@ public:
 private:
     Controller<Services&> controller{*this};
 
-    // list of controll objects and a function to create a new view onto them
+    // list of control objects and a function to create a new view onto them
     channel::value_mutex<std::unordered_map<std::string, ControllerBase*>> controllerList;
 
 public:

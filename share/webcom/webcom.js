@@ -65,44 +65,37 @@ let connectWebcom = function(url, _onClose) {
             }
         }
     }
-    let send = function(id, action) {
-        let params = {};
-        for (let i = 2; i < arguments.length; i++) {
-            params[(i-2) + ""] = arguments[i];
+
+    let register__ctor = function(adapter, methodNames, send) {
+        adapter.call = {};
+        for (let n of methodNames) {
+            adapter.call[n] = function() {
+                send(n, arguments);
+            };
         }
-        sendRaw({
-            action: "msgFromClient",
-            params: {"0": id, "1": {
-                action: action,
-                params: params
-            }}
-        });
+        if (adapter.methods.__ctor) {
+            adapter.methods.__ctor();
+        }
     };
     rObj.subscribe = function(serviceName) {
         let adapter = {};
         adapter.__ctor = function(methodNames) {
-            adapter.call = {};
-            for (let n of methodNames) {
-                adapter.call[n] = function() {
-                    send(adapter.id, n, ...arguments);
-                };
-            }
-            if (adapter.methods.__ctor) {
-                adapter.methods.__ctor();
-            }
+            register__ctor(adapter, methodNames, function(n, params) {
+                sendRaw({
+                    action: "msgFromClient",
+                    params: {"0": adapter.id, "1": {
+                        action: n,
+                        params: params
+                    }}
+                });
+            });
         };
         adapter.id = rObj.id++;
         adapter.unsubscribe = function() {
-            sendRaw({
-                action:  "unsubscribe",
-                params:  {"0": adapter.id}
-            });
+            rObj.call.unsubscribe(adapter.id);
         };
         rObj.dispatcher[adapter.id] = adapter;
-        sendRaw({
-            action:  "subscribe",
-            params:  {"0": adapter.id, "1": serviceName}
-        });
+        rObj.call.subscribe(adapter.id, serviceName);
         return adapter;
     }
     rObj.close = function() {
@@ -110,18 +103,23 @@ let connectWebcom = function(url, _onClose) {
     }
 
     rObj.__ctor = function(methodNames) {
-        rObj.call = {};
-        for (let n of methodNames) {
-            rObj.call[n] = function() {
-                send(adapter.id, n, ...arguments);
-            };
-        }
-        if (rObj.methods.__ctor) {
-            rObj.methods.__ctor();
-        }
+        register__ctor(rObj, methodNames, function(n, params) {
+            sendRaw({
+                action: n,
+                params: params
+            });
+        });
     };
 
     rObj.methods = {
+        __ctor: function() {
+            let interval = setInterval(function() {
+                rObj.call.ping()
+            }, 10000)
+            if (rObj.onCTor){
+                rObj.onCTor();
+            }
+        },
         msgToClient: function(id, list) {
             if (id in rObj.dispatcher) {
                 let adapter = rObj.dispatcher[id];
@@ -131,6 +129,9 @@ let connectWebcom = function(url, _onClose) {
             } else {
                 console.log("unknown dispatcher");
             }
+        },
+        pong: function() {
+            console.log("pong");
         }
     };
     return rObj;

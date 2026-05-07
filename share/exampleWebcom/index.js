@@ -81,8 +81,10 @@ function connectReadAndWriteValue(adapter) {
 
 window.onload = function() {
     let webcom = connectWebcom("ws://" + window.location.host + "/ws");
-    connectReadValue(webcom.subscribe("readValue"));
-    connectReadAndWriteValue(webcom.subscribe("readAndWriteValue"));
+    webcom.onCTor = () => {
+        connectReadValue(webcom.subscribe("readValue"));
+        connectReadAndWriteValue(webcom.subscribe("readAndWriteValue"));
 
-    let chat = initChat(webcom.subscribe("chat"));
+        let chat = initChat(webcom.subscribe("chat"));
+    };
 }

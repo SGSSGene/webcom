@@ -24,6 +24,7 @@ struct ServicesView : View {
         visitor("subscribe",     &ServicesView::subscribe);
         visitor("unsubscribe",   &ServicesView::unsubscribe);
         visitor("msgFromClient", &ServicesView::message);
+        visitor("ping",          &ServicesView::ping);
     }
 
     void subscribe(size_t _id, std::string _serviceName) {
@@ -40,6 +41,10 @@ struct ServicesView : View {
     void message(size_t id, Json::Value data) {
         auto& ptr = views.at(id);
         ptr->dispatchSignalFromClient(data);
+    }
+
+    void ping() {
+        callBack("pong");
     }
 };
 

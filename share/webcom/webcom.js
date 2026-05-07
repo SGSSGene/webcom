@@ -76,13 +76,15 @@ let connectWebcom = function(url, _onClose) {
     };
     rObj.subscribe = function(serviceName) {
         let adapter = {};
-        adapter.methods = {};
-        adapter.id = rObj.id++;
-        adapter.call = function(methodName) {
-            return function() {
-                send(adapter.id, methodName, ...arguments);
+        adapter.methods = { __ctor: function(methodNames) {
+            adapter.call = {};
+            for (let n of methodNames) {
+                adapter.call[n] = function() {
+                    send(adapter.id, n, ...arguments);
+                };
             }
-        };
+        }};
+        adapter.id = rObj.id++;
         adapter.unsubscribe = function() {
             sendRaw({
                 action:  "unsubscribe",

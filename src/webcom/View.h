@@ -38,6 +38,14 @@ struct View {
     auto operator=(View const&) -> View = delete;
     auto operator=(View&&) -> View = delete;
 
+    void init() const {
+        auto names = std::vector<std::string_view>{};
+        for (auto const& [key, cb] : callablesFromClient) {
+            names.push_back(key);
+        }
+        callBack("__ctor", names);
+    }
+
     void registerMethod(std::string const& _methodName, auto func) {
         callablesFromClient.emplace(_methodName, [this, func](Json::Value _parameters) {
             using Params = typename signature_t<std::decay_t<decltype(func)>>::params_t;

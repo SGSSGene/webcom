@@ -62,6 +62,7 @@ public:
                 TView::reflect(cb);
             }
         }
+        view->init();
         activeViews->insert(view.get());
 
         return view;

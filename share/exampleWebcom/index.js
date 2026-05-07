@@ -23,28 +23,35 @@ function initChat(adapter) {
         msgsTag.appendChild(tag);
     }
 
-    adapter.methods.init = function(list) {
-        if (list) {
-            for (let entry of list) {
-                obj.onAddMessage(entry);
+    // methods that are called by the server
+    adapter.methods = {
+        init: function(list) {
+            if (list) {
+                for (let entry of list) {
+                    obj.onAddMessage(entry);
+                }
             }
+        },
+        addMsg: function(msg) {
+            obj.onAddMessage(msg);
         }
-    }
-    adapter.methods.addMsg = function(msg) {
-        obj.onAddMessage(msg);
-    }
+    };
+
     return obj;
 }
 
 function connectReadValue(adapter) {
     let tag  = document.getElementById("widget/readValue");
 
-    adapter.methods.init = function(value) {
-        tag.innerHTML = value;
-    }
-    adapter.methods.setValue = function(value) {
-        tag.innerHTML = value;
-    }
+    // methods that are called by the server
+    adapter.methods = {
+        init: function(value) {
+            tag.innerHTML = value;
+        },
+        setValue: function(value) {
+            tag.innerHTML = value;
+        }
+    };
 }
 
 function connectReadAndWriteValue(adapter) {
@@ -59,12 +66,15 @@ function connectReadAndWriteValue(adapter) {
         }
     };
 
-    adapter.methods.init = function(value) {
-        tagText.innerHTML = value;
-    }
-    adapter.methods.setValue = function(value) {
-        tagText.innerHTML = value;
-    }
+    // methods that are called by the server
+    adapter.methods = {
+        init: function(value) {
+            tagText.innerHTML = value;
+        },
+        setValue: function(value) {
+            tagText.innerHTML = value;
+        }
+    };
 }
 
 

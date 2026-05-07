@@ -21,24 +21,12 @@ public:
     using CB     = std::function<std::unique_ptr<webcom::View>(SendCB)>;
 
 private:
+    Controller<Services&> controller{*this};
+
     // list of controll objects and a function to create a new view onto them
-    channel::value_mutex<std::unordered_map<std::string, CB>> controllerList;
+    channel::value_mutex<std::unordered_map<std::string, ControllerBase*>> controllerList;
 
 public:
-    // register a controller with a external lifetime
-    template <typename T, typename View = typename T::View>
-    auto registerController(std::string_view _key, T& object) {
-        auto controller = std::make_shared<Controller<T&, View>>(object);
-        auto _cb = [&, controller](SendCB _send) {
-            return controller->makeView(std::move(_send));
-        };
-
-        auto [guard, list] = *controllerList;
-        list->try_emplace(std::string{_key}, _cb);
-
-        return controller;
-    }
-
     void removeController(std::string_view _key) {
         controllerList->erase(std::string{_key});
     }
@@ -46,35 +34,13 @@ public:
     // register a controller with a external lifetime
     template <typename T, typename TView>
     void registerController(std::string_view _key, webcom::Controller<T, TView>& controller) {
-        auto _cb = [&](SendCB _send) {
-            return controller.makeView(std::move(_send));
-        };
-
         auto [guard, list] = *controllerList;
-        list->try_emplace(std::string{_key}, _cb);
+        list->try_emplace(std::string{_key}, &controller);
     }
-
 
     Services() {
-        registerController("services", *this);
+        registerController("services", controller);
     }
-
-
-    // construct and manage lifetime of a controller
-    template <typename TModel, typename TView = typename TModel::View, typename ...Args>
-    auto makeController(std::string_view _key, Args&&... args) {
-        auto controller = std::make_shared<Controller<TModel, TView>>(std::forward<Args>(args)...);
-        auto _cb = [&, controller](SendCB _send) {
-            return controller->makeView(std::move(_send));
-        };
-
-        auto [guard, list] = *controllerList;
-        list->try_emplace(std::string{_key}, _cb);
-
-        return controller;
-    }
-
-
 
     auto subscribe(std::string_view _serviceName, SendCB _send) -> std::unique_ptr<webcom::View> {
         auto [guard, list] = *controllerList;
@@ -83,7 +49,7 @@ public:
         if (iter == list->end()) {
             throw std::runtime_error(fmt::format("unknown service \"{}\"", _serviceName));
         }
-        return iter->second(std::move(_send));
+        return iter->second->makeView(std::move(_send));
     }
 };
 

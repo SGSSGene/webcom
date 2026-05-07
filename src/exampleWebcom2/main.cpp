@@ -43,7 +43,7 @@ struct Chat : channel::value_mutex<std::vector<std::string>> {
 int main(int argc, char const* const* argv) {
     auto services = webcom::Services{};
 
-    Chat chat;
+    webcom::Controller<Chat> chat;
     services.registerController("chat", chat);
 
     auto serviceController = webcom::Controller<webcom::Services&>{services};

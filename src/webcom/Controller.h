@@ -18,8 +18,13 @@ namespace webcom {
 
 struct View;
 
+struct ControllerBase {
+    virtual auto makeView(std::function<void(Json::Value)>) -> std::unique_ptr<View> = 0;
+    virtual ~ControllerBase() = default;
+};
+
 template <typename TModel, typename TView = std::remove_cvref_t<TModel>::View>
-struct Controller {
+struct Controller : ControllerBase {
 private:
     using ViewList = std::unordered_set<View*>;
 
@@ -30,7 +35,7 @@ private:
     TModel model;
 
     // a view that does not send anything out
-    std::unique_ptr<TView> view = makeView([](Json::Value){});
+    std::unique_ptr<TView> view = makeViewT([](Json::Value){});
 
 
 public:
@@ -41,8 +46,11 @@ public:
         : model{std::forward<Args>(_args)...}
     {}
 
+    auto makeView(std::function<void(Json::Value)> _sendData) -> std::unique_ptr<View> override {
+        return makeViewT(std::move(_sendData));
+    }
     // Create a view onto this object
-    auto makeView(std::function<void(Json::Value)> _sendData) -> std::unique_ptr<TView> {
+    auto makeViewT(std::function<void(Json::Value)> _sendData) -> std::unique_ptr<TView> {
         TView::gCTor = {
             .sendData    = std::move(_sendData),
             .activeViews = &activeViews,

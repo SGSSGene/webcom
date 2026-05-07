@@ -3,6 +3,7 @@
 #pragma once
 
 #include "Services.h"
+#include "ServicesView.h"
 
 #include <cndl/Route.h>
 #include <cndl/Server.h>
@@ -52,7 +53,7 @@ struct WebSocketHandler : cndl::WebsocketHandler {
                     throw std::runtime_error("invalid message");
                 }
                 userData->dispatchSignalFromClient(node);
-            } catch(...) {
+            } catch (...) {
                 fmt::print("exception when reading: \"{}\"", message);
                 throw;
             }

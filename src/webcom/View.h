@@ -65,7 +65,7 @@ struct View {
      * Call function _methodName on all remote peers
      */
     template <typename ...Args>
-    auto callAll(std::string_view _methodName, Args&&... _args) const {
+    void callAll(std::string_view _methodName, Args&&... _args) const {
         auto msg = detail::convertToMessage(_methodName, std::forward<Args>(_args)...);
         auto [guard, views] = *activeViews;
         for (auto& _view : *views) {
@@ -77,7 +77,7 @@ struct View {
      * Call function _methodName on the client associated with this View
      */
     template <typename ...Args>
-    auto callBack(std::string_view _methodName, Args&&... _args) const {
+    void callBack(std::string_view _methodName, Args&&... _args) const {
         auto msg = detail::convertToMessage(_methodName, std::forward<Args>(_args)...);
         sendData(msg);
     }
@@ -87,7 +87,7 @@ struct View {
      * associated with this View
      */
     template <typename ...Args>
-    auto callOthers(std::string_view _methodName, Args&&... _args) const {
+    void callOthers(std::string_view _methodName, Args&&... _args) const {
         auto msg = detail::convertToMessage(_methodName, std::forward<Args>(_args)...);
         auto [guard, views] = *activeViews;
         for (auto& _view : *views) {

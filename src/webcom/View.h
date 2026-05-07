@@ -74,16 +74,42 @@ struct View {
         callablesFromClient.erase(_methodName);
     }
 
+    struct BulkCall {
+        View const& view;
+        Json::Value node{};
+        template <typename ...Args>
+        auto add(std::string_view _methodName, Args&&... _args) -> BulkCall& {
+            node.append(detail::convertToMessage(_methodName, std::forward<Args>(_args)...));
+            return *this;
+        }
+        void sendAll() {
+            auto [guard, views] = *view.activeViews;
+            for (auto& _view : *views) {
+                _view->sendData(node);
+            }
+        }
+        void sendBack() {
+            view.sendData(node);
+        }
+        void sendOthers() {
+            auto [guard, views] = *view.activeViews;
+            for (auto& _view : *views) {
+                if (_view != &view) {
+                    _view->sendData(node);
+                }
+            }
+        }
+    };
+    auto bulkCall() const -> BulkCall {
+        return {*this};
+    };
+
     /**
      * Call function _methodName on all remote peers
      */
     template <typename ...Args>
     void callAll(std::string_view _methodName, Args&&... _args) const {
-        auto msg = detail::convertToMessage(_methodName, std::forward<Args>(_args)...);
-        auto [guard, views] = *activeViews;
-        for (auto& _view : *views) {
-            _view->sendData(msg);
-        }
+        bulkCall().add(_methodName, std::forward<Args>(_args)...).sendAll();
     }
 
     /**
@@ -91,8 +117,7 @@ struct View {
      */
     template <typename ...Args>
     void callBack(std::string_view _methodName, Args&&... _args) const {
-        auto msg = detail::convertToMessage(_methodName, std::forward<Args>(_args)...);
-        sendData(msg);
+        bulkCall().add(_methodName, std::forward<Args>(_args)...).sendBack();
     }
 
     /**
@@ -101,13 +126,7 @@ struct View {
      */
     template <typename ...Args>
     void callOthers(std::string_view _methodName, Args&&... _args) const {
-        auto msg = detail::convertToMessage(_methodName, std::forward<Args>(_args)...);
-        auto [guard, views] = *activeViews;
-        for (auto& _view : *views) {
-            if (_view != this) {
-                _view->sendData(msg);
-            }
-        }
+        bulkCall().add(_methodName, std::forward<Args>(_args)...).sendOthers();
     }
 
     /**

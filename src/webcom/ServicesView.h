@@ -21,15 +21,15 @@ struct ServicesView : View {
 
     static constexpr void reflect(auto& visitor) {
         // function that can be called by the client (webbrowser)
-        visitor("subscribe",   &ServicesView::subscribe);
-        visitor("unsubscribe", &ServicesView::unsubscribe);
-        visitor("message",     &ServicesView::message);
+        visitor("subscribe",     &ServicesView::subscribe);
+        visitor("unsubscribe",   &ServicesView::unsubscribe);
+        visitor("msgFromClient", &ServicesView::message);
     }
 
     void subscribe(size_t _id, std::string _serviceName) {
         views.try_emplace(_id, services.subscribe(std::move(_serviceName), [this, _id](Json::Value _node) {
-            _node["id"] = _id;
-            callBack("message", _node);
+            Json::Value parent;
+            callBack("msgToClient", _id, _node);
         }));
     }
 

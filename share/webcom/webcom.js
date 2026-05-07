@@ -24,26 +24,26 @@ let connectWebcom = function(url, _onClose) {
         rObj.isOpen = true;
     }
 
+    let dispatch = function(_node, _adapter) {
+        let action  = _node.action;
+        let params = [];
+        for (let i in _node.params) {
+            params.push(_node.params[i]);
+        }
+        if (action == '__ctor') {
+            _adapter.__ctor(...params);
+        } else if (action in _adapter.methods) {
+            _adapter.methods[action](...params);
+        } else {
+            console.log("illegal method: " + action);
+        }
+    };
+
     rObj.ws.onmessage = function(evt) {
         if (evt.data) {
             let text = evt.data;
-            let node = JSON.parse(text).params[0];
-            let id = node.id;
-            let action  = node.action;
-            let params = [];
-            for (let i in node.params) {
-                params.push(node.params[i]);
-            }
-            if (id in rObj.dispatcher) {
-                let methods = rObj.dispatcher[id].methods;
-                if (action == '__ctor') {
-                    rObj.dispatcher[id].__ctor(...params);
-                } else if (action in methods) {
-                    methods[action](...params);
-                } else {
-                    console.log("illegal method: " + action);
-                }
-            }
+            let node = JSON.parse(text)[0];
+            dispatch(node, rObj);
         }
     }
     rObj.ws.onclose = function(evt) {
@@ -71,7 +71,7 @@ let connectWebcom = function(url, _onClose) {
             params[(i-2) + ""] = arguments[i];
         }
         sendRaw({
-            action: "message",
+            action: "msgFromClient",
             params: {"0": id, "1": {
                 action: action,
                 params: params
@@ -80,7 +80,6 @@ let connectWebcom = function(url, _onClose) {
     };
     rObj.subscribe = function(serviceName) {
         let adapter = {};
-        adapter.methods = {};
         adapter.__ctor = function(methodNames) {
             adapter.call = {};
             for (let n of methodNames) {
@@ -99,7 +98,6 @@ let connectWebcom = function(url, _onClose) {
                 params:  {"0": adapter.id}
             });
         };
-
         rObj.dispatcher[adapter.id] = adapter;
         sendRaw({
             action:  "subscribe",
@@ -110,5 +108,30 @@ let connectWebcom = function(url, _onClose) {
     rObj.close = function() {
         rObj.ws.close();
     }
+
+    rObj.__ctor = function(methodNames) {
+        rObj.call = {};
+        for (let n of methodNames) {
+            rObj.call[n] = function() {
+                send(adapter.id, n, ...arguments);
+            };
+        }
+        if (rObj.methods.__ctor) {
+            rObj.methods.__ctor();
+        }
+    };
+
+    rObj.methods = {
+        msgToClient: function(id, list) {
+            if (id in rObj.dispatcher) {
+                let adapter = rObj.dispatcher[id];
+                for (let e of list) {
+                    dispatch(e, adapter);
+                }
+            } else {
+                console.log("unknown dispatcher");
+            }
+        }
+    };
     return rObj;
 };

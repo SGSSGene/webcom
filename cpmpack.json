@@ -10,6 +10,11 @@
       "name": "WEBCOM_BUILD_DEMO",
       "description": "build demonstrators for this project",
       "default": "${PROJECT_IS_TOP_LEVEL}"
+    },
+    {
+      "name": "WEBCOM_USE_REFLECTION",
+      "description": "uses reflection for advanced features",
+      "default": "OF"
     }
   ],
   "translationsets": [
@@ -17,7 +22,7 @@
       "name": "webcom::webcom",
       "type": "library",
       "test_header": true,
-      "language": "cxx_std_23",
+      "language": "cxx_std_26",
       "dependencies": [
         "fon::fon",
         "cndl::cndl",

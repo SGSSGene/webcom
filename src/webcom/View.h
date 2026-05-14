@@ -9,6 +9,11 @@
 #include <fon/json.h>
 #include <fon/std/all.h>
 
+#ifdef WEBCOM_USE_REFLECTION
+#include <meta>
+#include <print>
+#endif
+
 namespace webcom {
 
 struct View {
@@ -70,6 +75,18 @@ struct View {
             }, paramsAsTuple);
         });
     }
+    #ifdef WEBCOM_USE_REFLECTION
+    template <typename T>
+    void registerAllMethods(this T&& self) {
+        using S = std::decay_t<T>;
+        template for (constexpr auto x : define_static_array(std::meta::members_of(^^S, std::meta::access_context::current()))) {
+            if constexpr (is_nonstatic_data_member(x)) {
+            } else if constexpr (is_function(x) && !is_defaulted(x) && !is_constructor(x)) {
+                self.registerMethod(std::format("{}", identifier_of(x)), &[: x :]);
+            }
+        }
+    }
+    #endif
     void removeMethod(std::string const& _methodName) {
         callablesFromClient.erase(_methodName);
     }

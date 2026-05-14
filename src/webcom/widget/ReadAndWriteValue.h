@@ -17,10 +17,15 @@ struct ReadAndWriteValue : channel::value_mutex<T> {
         View(ReadAndWriteValue<T>& _entity)
             : entity{_entity}
         {
+            #ifdef WEBCOM_USE_REFLECTION
+                registerAllMethods();
+            #else
+                registerMethod("setValue", &View::setValue);
+            #endif
+
             auto [g, value] = *entity;
             // call 'init' of this client only
             callBack("init", *value);
-            registerMethod("setValue", &View::setValue);
         }
 
         void setValue(T t) {

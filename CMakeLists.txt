@@ -9,4 +9,9 @@ include(cmake/CPM.cmake)
 CPMAddPackage("gh:SGSSGene/cpmpack@1.1.2")
 loadCPMPack("${CMAKE_CURRENT_SOURCE_DIR}/cpmpack.json")
 
+if (WEBCOM_USE_REFLECTION)
+    target_compile_options(webcom INTERFACE -freflection)
+    target_compile_definitions(webcom INTERFACE WEBCOM_USE_REFLECTION)
+endif()
+
 enable_testing()

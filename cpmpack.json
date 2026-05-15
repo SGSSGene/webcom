@@ -14,7 +14,7 @@
     {
       "name": "WEBCOM_USE_REFLECTION",
       "description": "uses reflection for advanced features",
-      "default": "OF"
+      "default": "OFF"
     }
   ],
   "translationsets": [
